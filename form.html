@@ -1,80 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Create Work Order</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background:#f5f7fb;
-      margin:0;
-      padding:20px;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
     }
-    h2 {
-      margin-bottom:20px;
+
+    h1 {
+      margin-bottom: 20px;
     }
+
     label {
-      display:block;
-      margin-top:12px;
-      font-weight:bold;
+      display: block;
+      margin-top: 16px;
+      font-weight: bold;
     }
-    input, select, textarea {
-      width:100%;
-      padding:10px;
-      margin-top:6px;
-      border-radius:6px;
-      border:1px solid #ccc;
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
     }
+
+    textarea {
+      min-height: 100px;
+    }
+
     button {
-      margin-top:20px;
-      padding:12px;
-      width:100%;
-      background:#163a8f;
-      color:#fff;
-      border:none;
-      border-radius:6px;
-      font-size:16px;
-      cursor:pointer;
+      margin-top: 24px;
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      background: #0b3a8f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
+
     button:hover {
-      background:#0f2a66;
+      background: #092f73;
     }
   </style>
 </head>
+
 <body>
 
-  <h2>Create Work Order</h2>
+  <h1>Create Work Order</h1>
 
-  <label>Asset ID</label>
-  <input placeholder="PL01-L1-WPF-001">
+  <label for="asset_id">Asset ID</label>
+  <input id="asset_id" placeholder="PL01-L1-WPF-001" />
 
-  <label>Line</label>
-  <select>
-    <option>Line 1</option>
-    <option>Line 2</option>
-    <option>Line 3</option>
-    <option>Line 4</option>
-    <option>Line 5</option>
+  <label for="line">Line</label>
+  <select id="line">
+    <option value="Line 1">Line 1</option>
+    <option value="Line 2">Line 2</option>
+    <option value="Line 3">Line 3</option>
   </select>
 
-  <label>Problem</label>
-  <textarea rows="3" placeholder="Describe the problem"></textarea>
+  <label for="problem">Problem</label>
+  <textarea id="problem" placeholder="Describe the problem"></textarea>
 
-  <label>Priority</label>
-  <select>
-    <option>Critical</option>
-    <option>High</option>
-    <option>Normal</option>
+  <label for="priority">Priority</label>
+  <select id="priority">
+    <option value="Low">Low</option>
+    <option value="Medium">Medium</option>
+    <option value="Critical" selected>Critical</option>
   </select>
 
-  <label>Owner</label>
-  <input placeholder="Technician name">
+  <label for="owner">Owner</label>
+  <input id="owner" placeholder="Technician name" />
 
   <button onclick="submitWO()">Submit Work Order</button>
 
   <script>
-    function submitWO() {
-      alert("✅ UI สำเร็จแล้ว\nขั้นต่อไป: เชื่อม Google Sheet / Apps Script");
+    async function submitWO() {
+
+      const payload = {
+        asset_id: document.getElementById("asset_id").value.trim(),
+        line: document.getElementById("line").value,
+        problem: document.getElementById("problem").value.trim(),
+        priority: document.getElementById("priority").value,
+        owner: document.getElementById("owner").value.trim()
+      };
+
+      if (!payload.asset_id || !payload.problem) {
+        alert("❌ กรุณากรอก Asset ID และ Problem");
+        return;
+      }
+
+      const GAS_WEBAPP_URL =
+        "https://script.google.com/macros/s/AKfycbwWHk7ePYZlkO7TrDzgf3Fyu-YarOrTMSVG1pVijW82B3YmOSjz1dYhNERflsDH6GqDmg/exec";
+
+      try {
+        const response = await fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+          alert("✅ Work Order Created : " + result.wo_id);
+          window.location.href = "workorder.html";
+        } else {
+          alert("❌ GAS Error : " + result.message);
+        }
+
+      } catch (error) {
+        alert("❌ Network / GAS Error : " + error.message);
+      }
     }
   </script>
 

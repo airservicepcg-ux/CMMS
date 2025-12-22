@@ -1,42 +1,80 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CMMS – Food Factory</title>
+  <title>Create Work Order</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background:#f5f7fb;
       margin:0;
-      padding:40px;
+      padding:20px;
     }
-    h1 {
+    h2 {
       margin-bottom:20px;
     }
-    .btn {
-      padding:12px 20px;
+    label {
+      display:block;
+      margin-top:12px;
+      font-weight:bold;
+    }
+    input, select, textarea {
+      width:100%;
+      padding:10px;
+      margin-top:6px;
+      border-radius:6px;
+      border:1px solid #ccc;
+    }
+    button {
+      margin-top:20px;
+      padding:12px;
+      width:100%;
       background:#163a8f;
       color:#fff;
       border:none;
       border-radius:6px;
-      cursor:pointer;
       font-size:16px;
+      cursor:pointer;
     }
-    .btn:hover {
+    button:hover {
       background:#0f2a66;
     }
   </style>
 </head>
 <body>
 
-  <h1>CMMS – Food Factory</h1>
+  <h2>Create Work Order</h2>
 
-  <button class="btn" onclick="goWorkOrder()">Work Order</button>
+  <label>Asset ID</label>
+  <input placeholder="PL01-L1-WPF-001">
+
+  <label>Line</label>
+  <select>
+    <option>Line 1</option>
+    <option>Line 2</option>
+    <option>Line 3</option>
+    <option>Line 4</option>
+    <option>Line 5</option>
+  </select>
+
+  <label>Problem</label>
+  <textarea rows="3" placeholder="Describe the problem"></textarea>
+
+  <label>Priority</label>
+  <select>
+    <option>Critical</option>
+    <option>High</option>
+    <option>Normal</option>
+  </select>
+
+  <label>Owner</label>
+  <input placeholder="Technician name">
+
+  <button onclick="submitWO()">Submit Work Order</button>
 
   <script>
-    function goWorkOrder() {
-      window.location.href = "workorder.html";
+    function submitWO() {
+      alert("✅ UI สำเร็จแล้ว\nขั้นต่อไป: เชื่อม Google Sheet / Apps Script");
     }
   </script>
 

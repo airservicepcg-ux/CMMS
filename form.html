@@ -1,127 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Create Work Order</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f6f8;
-      margin: 0;
       padding: 20px;
     }
-
-    h1 {
-      margin-bottom: 20px;
+    .card {
+      max-width: 500px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-
     label {
       display: block;
-      margin-top: 16px;
+      margin-top: 12px;
       font-weight: bold;
     }
-
-    input, textarea, select {
+    input, select, textarea, button {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       margin-top: 6px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 14px;
     }
-
-    textarea {
-      min-height: 100px;
-    }
-
     button {
-      margin-top: 24px;
-      width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      background: #0b3a8f;
-      color: #fff;
+      margin-top: 16px;
+      background: #1976d2;
+      color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
       cursor: pointer;
     }
-
     button:hover {
-      background: #092f73;
+      background: #125aa0;
     }
   </style>
 </head>
-
 <body>
 
-  <h1>Create Work Order</h1>
+<div class="card">
+  <h2>Create Work Order</h2>
 
-  <label for="asset_id">Asset ID</label>
-  <input id="asset_id" placeholder="PL01-L1-WPF-001" />
+  <label>Asset ID</label>
+  <input id="asset_id" value="TEST-ASSET">
 
-  <label for="line">Line</label>
+  <label>Line</label>
   <select id="line">
-    <option value="Line 1">Line 1</option>
-    <option value="Line 2">Line 2</option>
-    <option value="Line 3">Line 3</option>
+    <option>Line 1</option>
+    <option>Line 2</option>
   </select>
 
-  <label for="problem">Problem</label>
-  <textarea id="problem" placeholder="Describe the problem"></textarea>
+  <label>Problem</label>
+  <textarea id="problem">Test problem</textarea>
 
-  <label for="priority">Priority</label>
+  <label>Priority</label>
   <select id="priority">
-    <option value="Low">Low</option>
-    <option value="Medium">Medium</option>
-    <option value="Critical" selected>Critical</option>
+    <option>Low</option>
+    <option>Medium</option>
+    <option selected>Critical</option>
   </select>
 
-  <label for="owner">Owner</label>
-  <input id="owner" placeholder="Technician name" />
+  <label>Owner</label>
+  <input id="owner" value="Tester">
 
   <button onclick="submitWO()">Submit Work Order</button>
+</div>
 
-  <script>
-    async function submitWO() {
+<script>
+async function submitWO() {
 
-      const payload = {
-        asset_id: document.getElementById("asset_id").value.trim(),
-        line: document.getElementById("line").value,
-        problem: document.getElementById("problem").value.trim(),
-        priority: document.getElementById("priority").value,
-        owner: document.getElementById("owner").value.trim()
-      };
+  const payload = {
+    asset_id: document.getElementById("asset_id").value,
+    line: document.getElementById("line").value,
+    problem: document.getElementById("problem").value,
+    priority: document.getElementById("priority").value,
+    owner: document.getElementById("owner").value
+  };
 
-      if (!payload.asset_id || !payload.problem) {
-        alert("❌ กรุณากรอก Asset ID และ Problem");
-        return;
-      }
+  const API_URL =
+    "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
 
-      const GAS_WEBAPP_URL =
-        "https://script.google.com/macros/s/AKfycbyitfONLJ0QxsFJVDqtExIGG1QM3wRkRtWzoXcwG56ujYjfar6Y-Fs4uZltvjAF_oDq/exec";
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
 
-      try {
-        const response = await fetch(GAS_WEBAPP_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
+    const result = await res.json();
 
-        const result = await response.json();
-
-        if (result.status === "success") {
-          alert("✅ Work Order Created : " + result.wo_id);
-          window.location.href = "workorder.html";
-        } else {
-          alert("❌ GAS Error : " + result.message);
-        }
-
-      } catch (error) {
-        alert("❌ Network / GAS Error : " + error.message);
-      }
+    if (result.status === "success") {
+      alert("✅ Work Order Created : " + result.wo_id);
+    } else {
+      alert("❌ Error : " + result.message);
     }
-  </script>
+
+  } catch (err) {
+    alert("❌ Network Error");
+    console.error(err);
+  }
+}
+</script>
 
 </body>
 </html>

@@ -47,8 +47,11 @@
 <div class="card">
   <h2>Create Work Order</h2>
 
+  <!-- ✅ STEP 2.3.1 : เปลี่ยน Asset ID เป็น dropdown -->
   <label>Asset ID</label>
-  <input id="asset_id" value="TEST-ASSET">
+  <select id="asset_id">
+    <option value="">-- Select Asset --</option>
+  </select>
 
   <label>Line</label>
   <select id="line">
@@ -57,7 +60,7 @@
   </select>
 
   <label>Problem</label>
-  <textarea id="problem">Test problem</textarea>
+  <textarea id="problem"></textarea>
 
   <label>Priority</label>
   <select id="priority">
@@ -67,12 +70,44 @@
   </select>
 
   <label>Owner</label>
-  <input id="owner" value="Tester">
+  <input id="owner">
 
   <button onclick="submitWO()">Submit Work Order</button>
 </div>
 
 <script>
+/* ======================================================
+   CONFIG
+   ====================================================== */
+const GAS_URL =
+  "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
+
+/* ======================================================
+   STEP 2.3.2 : โหลด Asset จาก Google Sheet
+   ====================================================== */
+async function loadAssets() {
+  try {
+    const res = await fetch(GAS_URL + "?mode=asset");
+    const assets = await res.json();
+
+    const select = document.getElementById("asset_id");
+
+    assets.forEach(assetId => {
+      const opt = document.createElement("option");
+      opt.value = assetId;
+      opt.textContent = assetId;
+      select.appendChild(opt);
+    });
+
+  } catch (err) {
+    alert("❌ Load Asset failed");
+    console.error(err);
+  }
+}
+
+/* ======================================================
+   SUBMIT WORK ORDER (ของเดิม ใช้ต่อได้เลย)
+   ====================================================== */
 async function submitWO() {
 
   const payload = {
@@ -83,11 +118,8 @@ async function submitWO() {
     owner: document.getElementById("owner").value
   };
 
-  const API_URL =
-    "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
-
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(GAS_URL, {
       method: "POST",
       body: JSON.stringify(payload)
     });
@@ -105,8 +137,12 @@ async function submitWO() {
     console.error(err);
   }
 }
+
+/* ======================================================
+   INIT
+   ====================================================== */
+loadAssets();
 </script>
 
 </body>
 </html>
-

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Technician - Work Order</title>
+  <style>
+    body { font-family: Arial; background:#f4f6f8 }
+    table { width:100%; border-collapse:collapse; background:#fff }
+    th, td { padding:10px; border:1px solid #ddd }
+    th { background:#163a8f; color:#fff }
+    select { padding:6px }
+  </style>
+</head>
+<body>
+
+<h2>🔧 Technician – Work Order</h2>
+
+<table id="woTable">
+  <thead>
+    <tr>
+      <th>WO ID</th>
+      <th>Asset</th>
+      <th>Problem</th>
+      <th>Priority</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
+
+fetch(API_URL + "?mode=workorder")
+  .then(r => r.json())
+  .then(data => {
+    const tbody = document.querySelector("#woTable tbody");
+    data.forEach(w => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${w.wo_id}</td>
+        <td>${w.asset_id}</td>
+        <td>${w.problem}</td>
+        <td>${w.priority}</td>
+        <td>${w.status}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,10 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Create Work Order</title>
+
+<!-- ===== QR LIB ===== -->
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body {
@@ -14,7 +16,6 @@ body {
   padding: 20px;
 }
 
-/* ===== TOP NAV ===== */
 .top-nav {
   display: flex;
   align-items: center;
@@ -36,28 +37,12 @@ body {
   cursor: pointer;
 }
 
-.top-nav button:hover {
-  background: #e6e6e6;
-}
-
-.nav-title {
-  font-size: 18px;
-  font-weight: bold;
-}
-
-/* ===== CARD ===== */
 .card {
   max-width: 520px;
   background: white;
   padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
   margin: auto;
-}
-
-h1 {
-  margin-top: 0;
-  text-align: center;
 }
 
 label {
@@ -74,8 +59,7 @@ input, textarea, select {
   border: 1px solid #ccc;
 }
 
-/* ===== BUTTONS ===== */
-button.submit-btn {
+.submit-btn {
   margin-top: 20px;
   width: 100%;
   padding: 12px;
@@ -85,163 +69,162 @@ button.submit-btn {
   border-radius: 8px;
   font-size: 16px;
   font-weight: bold;
-  cursor: pointer;
 }
 
-button.submit-btn:hover {
-  background: #163072;
+#qr-reader {
+  width: 100%;
+  margin-top: 10px;
+  display: none;
 }
 
-/* ===== PHOTO PREVIEW ===== */
 #preview img {
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
-  border-radius: 8px;
-  margin-right: 6px;
-  margin-top: 6px;
+  border-radius: 6px;
+  margin: 5px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== TOP NAV ===== -->
 <div class="top-nav">
   <button onclick="goHome()">⬅ Home</button>
-  <span class="nav-title">Create Work Order</span>
+  <span>Create Work Order</span>
 </div>
 
-<!-- ===== FORM CARD ===== -->
 <div class="card">
-  <h1>Create Work Order</h1>
 
-  <label>Asset ID</label>
-  <select id="asset_id">
-    <option value="">-- Select Asset --</option>
-  </select>
+<label>Asset ID</label>
+<select id="asset_id">
+  <option value="">-- Select Asset --</option>
+</select>
 
-  <label>Line</label>
-  <select id="line">
-    <option>Line 1</option>
-    <option>Line 2</option>
-    <option>Line 3</option>
-  </select>
+<button type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
+<div id="qr-reader"></div>
+<button type="button" onclick="closeQR()" id="closeQR" style="display:none;">❌ Close Scanner</button>
 
-  <label>Problem</label>
-  <textarea id="problem"></textarea>
+<label>Line</label>
+<select id="line">
+  <option>Line 1</option>
+  <option>Line 2</option>
+</select>
 
-  <label>Priority</label>
-  <select id="priority">
-    <option>Critical</option>
-    <option>High</option>
-    <option>Medium</option>
-    <option>Low</option>
-  </select>
+<label>Problem</label>
+<textarea id="problem"></textarea>
 
-  <label>Owner</label>
-  <input type="text" id="owner"/>
+<label>Priority</label>
+<select id="priority">
+  <option>Critical</option>
+  <option>High</option>
+  <option>Medium</option>
+  <option>Low</option>
+</select>
 
-  <!-- ================= NEW : PHOTO UPLOAD ================= -->
-  <label>Photo (Max 4 images)</label>
-  <input
-    type="file"
-    id="photos"
-    accept="image/*"
-    capture="environment"
-    multiple
-  >
-  <small>📸 ถ่ายหรือเลือกได้ไม่เกิน 4 รูป</small>
+<label>Owner</label>
+<input id="owner"/>
 
-  <div id="preview"></div>
-  <!-- ====================================================== -->
+<label>Photo (Max 4 images)</label>
+<input type="file" id="photos" accept="image/*" capture="environment" multiple>
+<div id="preview"></div>
 
-  <button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
+<button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
 </div>
 
 <script>
-/* ===== CONFIG (เดิม) ===== */
 const API_URL = "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
 
-/* ===== NAV (เดิม) ===== */
-function goHome() {
-  window.location.href = "https://airservicepcg-ux.github.io/CMMS/";
+function goHome(){
+  location.href = "https://airservicepcg-ux.github.io/CMMS/";
 }
 
-/* ===== LOAD ASSET (เดิม) ===== */
+/* ===== Load Asset ===== */
 fetch(API_URL + "?mode=asset")
-  .then(res => res.json())
-  .then(data => {
-    const sel = document.getElementById("asset_id");
-    data.forEach(a => {
-      const opt = document.createElement("option");
-      opt.value = a;
-      opt.textContent = a;
-      sel.appendChild(opt);
-    });
-  });
-
-/* ================= NEW : PHOTO HANDLING ================= */
-const photoInput = document.getElementById("photos");
-const preview = document.getElementById("preview");
-
-photoInput.addEventListener("change", () => {
-  preview.innerHTML = "";
-
-  if (photoInput.files.length > 4) {
-    alert("❌ เลือกรูปได้ไม่เกิน 4 รูป");
-    photoInput.value = "";
-    return;
-  }
-
-  [...photoInput.files].forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = document.createElement("img");
-      img.src = e.target.result;
-      preview.appendChild(img);
-    };
-    reader.readAsDataURL(file);
+.then(r=>r.json())
+.then(list=>{
+  const sel=document.getElementById("asset_id");
+  list.forEach(a=>{
+    const o=document.createElement("option");
+    o.value=a; o.textContent=a;
+    sel.appendChild(o);
   });
 });
 
-function getImagesBase64() {
-  return Promise.all(
-    [...photoInput.files].map(file => {
-      return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    })
+/* ===== QR ===== */
+let qr;
+function openQRScanner(){
+  document.getElementById("qr-reader").style.display="block";
+  document.getElementById("closeQR").style.display="block";
+  qr = new Html5Qrcode("qr-reader");
+  qr.start(
+    { facingMode:"environment" },
+    { fps:10, qrbox:250 },
+    text=>{
+      document.getElementById("asset_id").value=text.trim();
+      closeQR();
+    }
   );
 }
-/* ======================================================= */
+function closeQR(){
+  if(qr){ qr.stop(); }
+  document.getElementById("qr-reader").style.display="none";
+  document.getElementById("closeQR").style.display="none";
+}
 
-/* ===== SUBMIT (ขยายจากของเดิมอย่างปลอดภัย) ===== */
-async function submitWO() {
+/* ===== PHOTO ===== */
+const photos=document.getElementById("photos");
+const preview=document.getElementById("preview");
 
-  const images = await getImagesBase64(); // NEW
+photos.addEventListener("change",()=>{
+  preview.innerHTML="";
+  if(photos.files.length>4){
+    alert("เลือกได้ไม่เกิน 4 รูป");
+    photos.value="";
+    return;
+  }
+  [...photos.files].forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const img=document.createElement("img");
+      img.src=e.target.result;
+      preview.appendChild(img);
+    };
+    r.readAsDataURL(f);
+  });
+});
 
-  const payload = {
-    asset_id: document.getElementById("asset_id").value,
-    line: document.getElementById("line").value,
-    problem: document.getElementById("problem").value,
-    priority: document.getElementById("priority").value,
-    owner: document.getElementById("owner").value,
-    images: images // NEW (ยังไม่ใช้ที่ GAS)
+function getImages(){
+  return Promise.all([...photos.files].map(f=>{
+    return new Promise(res=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result);
+      r.readAsDataURL(f);
+    });
+  }));
+}
+
+/* ===== SUBMIT ===== */
+async function submitWO(){
+  const images=await getImages();
+  const payload={
+    asset_id:asset_id.value,
+    line:line.value,
+    problem:problem.value,
+    priority:priority.value,
+    owner:owner.value,
+    images:images
   };
 
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify(payload)
   })
-  .then(res => res.json())
-  .then(r => {
-    alert("Created : " + r.wo_id);
+  .then(r=>r.json())
+  .then(d=>{
+    alert("Created "+d.wo_id);
     location.reload();
-  })
-  .catch(() => alert("Submit failed"));
+  });
 }
 </script>
 

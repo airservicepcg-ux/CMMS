@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Create Work Order</title>
 
-<!-- ===== QR LIB ===== -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
@@ -18,7 +17,6 @@ body {
 
 .top-nav {
   display: flex;
-  align-items: center;
   gap: 12px;
   background: #1f3c88;
   color: white;
@@ -34,7 +32,6 @@ body {
   padding: 8px 14px;
   border-radius: 6px;
   font-weight: bold;
-  cursor: pointer;
 }
 
 .card {
@@ -71,19 +68,7 @@ input, textarea, select {
   font-weight: bold;
 }
 
-#qr-reader {
-  width: 100%;
-  margin-top: 10px;
-  display: none;
-}
-
-#preview img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin: 5px;
-}
+#qr-reader { display:none; margin-top:10px; }
 
 .photo-btn {
   margin-top: 8px;
@@ -94,6 +79,14 @@ input, textarea, select {
   border: none;
   border-radius: 6px;
   font-weight: bold;
+}
+
+#preview img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin: 5px;
 }
 </style>
 </head>
@@ -136,14 +129,12 @@ input, textarea, select {
 <label>Owner</label>
 <input id="owner"/>
 
-<!-- ✅ NEW -->
 <label>Email</label>
 <input type="email" id="email" placeholder="example@email.com"/>
 
 <label>Phone Number</label>
 <input type="tel" id="phone" placeholder="08xxxxxxxx"/>
 
-<!-- ✅ NEW PHOTO SYSTEM -->
 <label>Photo (ถ่ายได้สูงสุด 4 รูป)</label>
 <button type="button" class="photo-btn" onclick="takePhoto()">📸 ถ่ายรูป</button>
 <div id="photo-count">0 / 4</div>
@@ -152,78 +143,74 @@ input, textarea, select {
 <div id="preview"></div>
 
 <button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
+
 </div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
 
-/* ===== NAV ===== */
+/* NAV */
 function goHome(){
-  location.href = "https://airservicepcg-ux.github.io/CMMS/";
+  location.href="https://airservicepcg-ux.github.io/CMMS/";
 }
 
-/* ===== LOAD ASSET ===== */
-fetch(API_URL + "?mode=asset")
+/* LOAD ASSET */
+fetch(API_URL+"?mode=asset")
 .then(r=>r.json())
 .then(list=>{
+  const sel=document.getElementById("asset_id");
   list.forEach(a=>{
     const o=document.createElement("option");
     o.value=a; o.textContent=a;
-    asset_id.appendChild(o);
+    sel.appendChild(o);
   });
 });
 
-/* ===== QR ===== */
+/* QR */
 let qr;
 function openQRScanner(){
-  qr = new Html5Qrcode("qr-reader");
-  qr.start(
-    { facingMode:"environment" },
-    { fps:10, qrbox:250 },
-    txt=>{
-      asset_id.value=txt.trim();
-      closeQR();
-    }
-  );
-  qr-reader.style.display="block";
-  closeQR.style.display="block";
+  document.getElementById("qr-reader").style.display="block";
+  document.getElementById("closeQR").style.display="block";
+  qr=new Html5Qrcode("qr-reader");
+  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
+    document.getElementById("asset_id").value=txt.trim();
+    closeQR();
+  });
 }
 function closeQR(){
   if(qr) qr.stop();
-  qr-reader.style.display="none";
-  closeQR.style.display="none";
+  document.getElementById("qr-reader").style.display="none";
+  document.getElementById("closeQR").style.display="none";
 }
 
-/* ===== PHOTO (4 SHOTS) ===== */
+/* PHOTO */
 let images=[];
 const maxPhotos=4;
 
 function takePhoto(){
   if(images.length>=maxPhotos){
-    alert("ถ่ายรูปครบ 4 รูปแล้ว");
+    alert("ครบ 4 รูปแล้ว");
     return;
   }
-  cameraInput.click();
+  document.getElementById("cameraInput").click();
 }
 
-cameraInput.addEventListener("change",()=>{
-  const file=cameraInput.files[0];
+document.getElementById("cameraInput").addEventListener("change",()=>{
+  const file=document.getElementById("cameraInput").files[0];
   if(!file) return;
-
   const r=new FileReader();
   r.onload=()=>{
     images.push(r.result);
     const img=document.createElement("img");
     img.src=r.result;
-    preview.appendChild(img);
-    photo-count.textContent=images.length+" / "+maxPhotos;
+    document.getElementById("preview").appendChild(img);
+    document.getElementById("photo-count").textContent=images.length+" / "+maxPhotos;
   };
   r.readAsDataURL(file);
-  cameraInput.value="";
 });
 
-/* ===== SUBMIT ===== */
-async function submitWO(){
+/* SUBMIT */
+function submitWO(){
   const payload={
     asset_id:asset_id.value,
     line:line.value,

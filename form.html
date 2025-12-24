@@ -1,12 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Create Work Order</title>
-
-<!-- ===== STEP 1 : QR Library ===== -->
-<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body {
@@ -94,18 +92,14 @@ button.submit-btn:hover {
   background: #163072;
 }
 
-.qr-btn {
+/* ===== PHOTO PREVIEW ===== */
+#preview img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 6px;
   margin-top: 6px;
-  background: #0d6efd;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.qr-btn:hover {
-  background: #084298;
 }
 </style>
 </head>
@@ -126,13 +120,6 @@ button.submit-btn:hover {
   <select id="asset_id">
     <option value="">-- Select Asset --</option>
   </select>
-
-  <!-- ===== STEP 2 : Scan Button ===== -->
-  <button class="qr-btn" type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
-
-  <!-- ===== STEP 3 : QR Camera (hidden) ===== -->
-  <div id="qr-reader" style="width:100%; margin-top:10px; display:none;"></div>
-  <button id="closeQR" class="qr-btn" style="display:none;" onclick="closeQRScanner()">❌ Close Scanner</button>
 
   <label>Line</label>
   <select id="line">
@@ -155,19 +142,33 @@ button.submit-btn:hover {
   <label>Owner</label>
   <input type="text" id="owner"/>
 
+  <!-- ================= NEW : PHOTO UPLOAD ================= -->
+  <label>Photo (Max 4 images)</label>
+  <input
+    type="file"
+    id="photos"
+    accept="image/*"
+    capture="environment"
+    multiple
+  >
+  <small>📸 ถ่ายหรือเลือกได้ไม่เกิน 4 รูป</small>
+
+  <div id="preview"></div>
+  <!-- ====================================================== -->
+
   <button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
+/* ===== CONFIG (เดิม) ===== */
 const API_URL = "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
 
-/* ===== NAV ===== */
+/* ===== NAV (เดิม) ===== */
 function goHome() {
   window.location.href = "https://airservicepcg-ux.github.io/CMMS/";
 }
 
-/* ===== LOAD ASSET ===== */
+/* ===== LOAD ASSET (เดิม) ===== */
 fetch(API_URL + "?mode=asset")
   .then(res => res.json())
   .then(data => {
@@ -178,54 +179,57 @@ fetch(API_URL + "?mode=asset")
       opt.textContent = a;
       sel.appendChild(opt);
     });
-  })
-  .catch(() => alert("Load Asset failed"));
+  });
 
-/* ===== STEP 4 : QR SCANNER LOGIC ===== */
-let qrScanner;
+/* ================= NEW : PHOTO HANDLING ================= */
+const photoInput = document.getElementById("photos");
+const preview = document.getElementById("preview");
 
-function openQRScanner() {
-  document.getElementById("qr-reader").style.display = "block";
-  document.getElementById("closeQR").style.display = "inline";
+photoInput.addEventListener("change", () => {
+  preview.innerHTML = "";
 
-  qrScanner = new Html5Qrcode("qr-reader");
-  qrScanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    (decodedText) => {
-      setAssetFromQR(decodedText);
-      closeQRScanner();
-    }
+  if (photoInput.files.length > 4) {
+    alert("❌ เลือกรูปได้ไม่เกิน 4 รูป");
+    photoInput.value = "";
+    return;
+  }
+
+  [...photoInput.files].forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+function getImagesBase64() {
+  return Promise.all(
+    [...photoInput.files].map(file => {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    })
   );
 }
+/* ======================================================= */
 
-function closeQRScanner() {
-  if (qrScanner) {
-    qrScanner.stop().then(() => qrScanner.clear());
-  }
-  document.getElementById("qr-reader").style.display = "none";
-  document.getElementById("closeQR").style.display = "none";
-}
+/* ===== SUBMIT (ขยายจากของเดิมอย่างปลอดภัย) ===== */
+async function submitWO() {
 
-function setAssetFromQR(value) {
-  const select = document.getElementById("asset_id");
-  for (let opt of select.options) {
-    if (opt.value === value) {
-      opt.selected = true;
-      return;
-    }
-  }
-  alert("QR ไม่ตรงกับ Asset ในระบบ: " + value);
-}
+  const images = await getImagesBase64(); // NEW
 
-/* ===== SUBMIT ===== */
-function submitWO() {
   const payload = {
     asset_id: document.getElementById("asset_id").value,
     line: document.getElementById("line").value,
     problem: document.getElementById("problem").value,
     priority: document.getElementById("priority").value,
-    owner: document.getElementById("owner").value
+    owner: document.getElementById("owner").value,
+    images: images // NEW (ยังไม่ใช้ที่ GAS)
   };
 
   fetch(API_URL, {
@@ -243,4 +247,3 @@ function submitWO() {
 
 </body>
 </html>
-

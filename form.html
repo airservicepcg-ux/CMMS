@@ -84,6 +84,17 @@ input, textarea, select {
   border-radius: 6px;
   margin: 5px;
 }
+
+.photo-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+}
 </style>
 </head>
 
@@ -125,8 +136,19 @@ input, textarea, select {
 <label>Owner</label>
 <input id="owner"/>
 
-<label>Photo (Max 4 images)</label>
-<input type="file" id="photos" accept="image/*" capture="environment" multiple>
+<!-- ✅ NEW -->
+<label>Email</label>
+<input type="email" id="email" placeholder="example@email.com"/>
+
+<label>Phone Number</label>
+<input type="tel" id="phone" placeholder="08xxxxxxxx"/>
+
+<!-- ✅ NEW PHOTO SYSTEM -->
+<label>Photo (ถ่ายได้สูงสุด 4 รูป)</label>
+<button type="button" class="photo-btn" onclick="takePhoto()">📸 ถ่ายรูป</button>
+<div id="photo-count">0 / 4</div>
+
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
 <div id="preview"></div>
 
 <button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
@@ -135,84 +157,81 @@ input, textarea, select {
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyMM20DT2UI1MH2BE3dsim7t94Ce6PsVM4R3CwsGCsjwE2s7BrRAZjZUa-v14hl_N9BJw/exec";
 
+/* ===== NAV ===== */
 function goHome(){
   location.href = "https://airservicepcg-ux.github.io/CMMS/";
 }
 
-/* ===== Load Asset ===== */
+/* ===== LOAD ASSET ===== */
 fetch(API_URL + "?mode=asset")
 .then(r=>r.json())
 .then(list=>{
-  const sel=document.getElementById("asset_id");
   list.forEach(a=>{
     const o=document.createElement("option");
     o.value=a; o.textContent=a;
-    sel.appendChild(o);
+    asset_id.appendChild(o);
   });
 });
 
 /* ===== QR ===== */
 let qr;
 function openQRScanner(){
-  document.getElementById("qr-reader").style.display="block";
-  document.getElementById("closeQR").style.display="block";
   qr = new Html5Qrcode("qr-reader");
   qr.start(
     { facingMode:"environment" },
     { fps:10, qrbox:250 },
-    text=>{
-      document.getElementById("asset_id").value=text.trim();
+    txt=>{
+      asset_id.value=txt.trim();
       closeQR();
     }
   );
+  qr-reader.style.display="block";
+  closeQR.style.display="block";
 }
 function closeQR(){
-  if(qr){ qr.stop(); }
-  document.getElementById("qr-reader").style.display="none";
-  document.getElementById("closeQR").style.display="none";
+  if(qr) qr.stop();
+  qr-reader.style.display="none";
+  closeQR.style.display="none";
 }
 
-/* ===== PHOTO ===== */
-const photos=document.getElementById("photos");
-const preview=document.getElementById("preview");
+/* ===== PHOTO (4 SHOTS) ===== */
+let images=[];
+const maxPhotos=4;
 
-photos.addEventListener("change",()=>{
-  preview.innerHTML="";
-  if(photos.files.length>4){
-    alert("เลือกได้ไม่เกิน 4 รูป");
-    photos.value="";
+function takePhoto(){
+  if(images.length>=maxPhotos){
+    alert("ถ่ายรูปครบ 4 รูปแล้ว");
     return;
   }
-  [...photos.files].forEach(f=>{
-    const r=new FileReader();
-    r.onload=e=>{
-      const img=document.createElement("img");
-      img.src=e.target.result;
-      preview.appendChild(img);
-    };
-    r.readAsDataURL(f);
-  });
-});
-
-function getImages(){
-  return Promise.all([...photos.files].map(f=>{
-    return new Promise(res=>{
-      const r=new FileReader();
-      r.onload=()=>res(r.result);
-      r.readAsDataURL(f);
-    });
-  }));
+  cameraInput.click();
 }
+
+cameraInput.addEventListener("change",()=>{
+  const file=cameraInput.files[0];
+  if(!file) return;
+
+  const r=new FileReader();
+  r.onload=()=>{
+    images.push(r.result);
+    const img=document.createElement("img");
+    img.src=r.result;
+    preview.appendChild(img);
+    photo-count.textContent=images.length+" / "+maxPhotos;
+  };
+  r.readAsDataURL(file);
+  cameraInput.value="";
+});
 
 /* ===== SUBMIT ===== */
 async function submitWO(){
-  const images=await getImages();
   const payload={
     asset_id:asset_id.value,
     line:line.value,
     problem:problem.value,
     priority:priority.value,
     owner:owner.value,
+    email:email.value,
+    phone:phone.value,
     images:images
   };
 

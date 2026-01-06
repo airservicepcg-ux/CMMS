@@ -124,6 +124,18 @@ input, textarea, select {
 <select id="asset_id">
   <option value="">-- Select Asset --</option>
 </select>
+  
+  <div id="assetDetail" style="display:none; border:1px solid #ddd; padding:12px; border-radius:8px; margin-top:10px;">
+  <img id="assetImage" style="max-width:100%; border-radius:6px; margin-bottom:8px;" />
+
+  <div><b>ชื่อเครื่อง:</b> <span id="d_name"></span></div>
+  <div><b>ประเภท:</b> <span id="d_class"></span></div>
+  <div><b>กำลังไฟ:</b> <span id="d_kw"></span> kW / <span id="d_hp"></span> HP</div>
+  <div><b>Line:</b> <span id="d_line"></span></div>
+  <div><b>Location:</b> <span id="d_location"></span></div>
+  <div><b>Status:</b> <span id="d_status"></span></div>
+</div>
+
 
 <button type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
 <div id="qr-reader"></div>

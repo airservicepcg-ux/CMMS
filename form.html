@@ -1,284 +1,139 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Create Work Order</title>
+// ================================
+// CONFIG
+// ================================
+const SPREADSHEET_ID = "1QtHgPE-WDn9ycnQGna0u-Lr4VnH318uexis3SuOIam0";
+const SHEET_NAME = "WORK_ORDER";
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+const SLIDE_TEMPLATE_ID = "1n9agKbGrgvUSC4_KIs4G_SdB--Un05a6LHopFfB780A";
+const PDF_FOLDER_ID = "1ZLWZGzFMJTcY3IerRQ-LRE9yvBqTtHGx";
 
-<style>
-body{
-  font-family:Arial, sans-serif;
-  background:#f4f6f8;
-  margin:0;
-  padding:20px;
-}
-.top-nav{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  background:#1f3c88;
-  color:white;
-  padding:12px 20px;
-  border-radius:10px;
-  margin-bottom:20px;
-}
-.top-nav button{
-  background:white;
-  color:#1f3c88;
-  border:none;
-  padding:8px 14px;
-  border-radius:6px;
-  font-weight:bold;
-}
-.card{
-  max-width:520px;
-  background:white;
-  padding:24px;
-  border-radius:12px;
-  margin:auto;
-}
-label{
-  font-weight:bold;
-  margin-top:12px;
-  display:block;
-}
-input, textarea, select{
-  width:100%;
-  padding:10px;
-  margin-top:6px;
-  border-radius:6px;
-  border:1px solid #ccc;
-}
-.submit-btn{
-  margin-top:20px;
-  width:100%;
-  padding:12px;
-  background:linear-gradient(135deg,#1f3c88,#274bb5);
-  color:white;
-  border:none;
-  border-radius:8px;
-  font-size:16px;
-  font-weight:bold;
-  cursor:pointer;
-}
-.submit-btn.loading{
-  background:#999;
-}
-.submit-btn.success{
-  background:#2e7d32;
-}
-#qr-reader{display:none;margin-top:10px;}
-.photo-btn{
-  margin-top:8px;
-  width:100%;
-  padding:10px;
-  background:#4caf50;
-  color:white;
-  border:none;
-  border-radius:6px;
-  font-weight:bold;
-}
-#preview img{
-  width:80px;
-  height:80px;
-  object-fit:cover;
-  border-radius:6px;
-  margin:5px;
-}
-#assetDetail{
-  display:none;
-  border:1px solid #ddd;
-  padding:12px;
-  border-radius:8px;
-  margin-top:10px;
-  background:#fafafa;
-}
-</style>
-</head>
+const ADMIN_EMAIL = "airservicepcg@gmail.com";
+const MANAGER_EMAIL = "narongkon.poo@perfectcompanion.com";
 
-<body>
+// ================================
+// WEB APP ENTRY
+// ================================
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
 
-<div class="top-nav">
-  <button onclick="goHome()">⬅ Home</button>
-  <span>Create Work Order</span>
-</div>
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
 
-<div class="card">
+    const woId = "WO-" + Date.now();
+    const now = new Date();
 
-<label>Asset ID</label>
-<select id="asset_id">
-  <option value="">-- Select Asset --</option>
-</select>
+    // บันทึกลง Sheet
+    sheet.appendRow([
+      woId,
+      now,
+      data.asset_id,
+      data.line,
+      data.problem,
+      data.priority,
+      data.owner,
+      data.email,
+      data.phone,
+      data.photos?.[0] || "",
+      data.photos?.[1] || "",
+      data.photos?.[2] || "",
+      data.photos?.[3] || "",
+      "OPEN"
+    ]);
 
-<button type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
-<div id="qr-reader"></div>
-<button type="button" id="closeQR" onclick="closeQR()" style="display:none;">❌ Close Scanner</button>
+    // =====================
+    // PDF + EMAIL (ทันที)
+    // =====================
+    const pdfUrl = generatePdfFromWorkOrder({
+      wo_id: woId,
+      date: Utilities.formatDate(now, Session.getScriptTimeZone(), "dd/MM/yyyy"),
+      asset_id: data.asset_id,
+      line: data.line,
+      problem: data.problem,
+      priority: data.priority,
+      owner: data.owner,
+      phone: data.phone,
+      photos: data.photos || []
+    });
 
-<div id="assetDetail">
-  <img id="assetImage" style="max-width:100%;border-radius:6px;margin-bottom:8px;" />
-  <div><b>ชื่อเครื่อง:</b> <span id="d_name"></span></div>
-  <div><b>ประเภท:</b> <span id="d_class"></span></div>
-  <div><b>กำลังไฟ:</b> <span id="d_kw"></span> kW / <span id="d_hp"></span> HP</div>
-  <div><b>Line:</b> <span id="d_line"></span></div>
-  <div><b>Location:</b> <span id="d_location"></span></div>
-  <div><b>Status:</b> <span id="d_status"></span></div>
-</div>
+    sendWorkOrderEmail({
+      wo_id: woId,
+      date: Utilities.formatDate(now, Session.getScriptTimeZone(), "dd/MM/yyyy"),
+      asset_id: data.asset_id,
+      line: data.line,
+      problem: data.problem,
+      priority: data.priority,
+      email: data.email
+    }, pdfUrl);
 
-<label>Line</label>
-<select id="line">
-  <option>Line 1</option>
-  <option>Line 2</option>
-  <option>Line 3</option>
-</select>
+    return json({ status: "success", wo_id: woId });
 
-<label>Problem</label>
-<textarea id="problem"></textarea>
-
-<label>Priority</label>
-<select id="priority">
-  <option>Critical</option>
-  <option>High</option>
-  <option>Medium</option>
-  <option>Low</option>
-</select>
-
-<label>Owner</label>
-<input id="owner"/>
-
-<label>Email</label>
-<input type="email" id="email"/>
-
-<label>Phone</label>
-<input type="tel" id="phone"/>
-
-<label>Photo (สูงสุด 4 รูป)</label>
-<button type="button" class="photo-btn" onclick="takePhoto()">📸 ถ่ายรูป</button>
-<div id="photo-count">0 / 4</div>
-<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
-<div id="preview"></div>
-
-<button id="submitBtn" class="submit-btn" onclick="submitWO()">Submit Work Order</button>
-
-</div>
-
-<script>
-/* ================= CONFIG ================= */
-const API_URL = "https://script.google.com/macros/s/AKfycbzhl0YwuIgCLef0MSpHWmpO3GZwPuyMbXcsNETJ0HinK-2BscbvtSNoqaUW71Ec1GemEg/exec";
-
-/* ================= NAV ================= */
-function goHome(){
-  location.href="https://airservicepcg-ux.github.io/CMMS/";
-}
-
-/* ================= LOAD ASSET LIST ================= */
-fetch(API_URL+"?mode=asset")
-.then(r=>r.json())
-.then(list=>{
-  const sel=document.getElementById("asset_id");
-  list.forEach(id=>{
-    const o=document.createElement("option");
-    o.value=id;
-    o.textContent=id;
-    sel.appendChild(o);
-  });
-});
-
-/* ================= ASSET DETAIL ================= */
-async function loadAssetDetail(assetId){
-  if(!assetId){
-    assetDetail.style.display="none";
-    return;
-  }
-  const res=await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
-  const a=await res.json();
-  if(!a.asset_id) return;
-
-  assetDetail.style.display="block";
-  assetImage.src=a.image_url||"";
-  d_name.innerText=a.asset_name||"-";
-  d_class.innerText=a.asset_class||"-";
-  d_kw.innerText=a.kw||"-";
-  d_hp.innerText=a.hp||"-";
-  d_line.innerText=a.line||"-";
-  d_location.innerText=a.location||"-";
-  d_status.innerText=a.status||"-";
-}
-
-asset_id.addEventListener("change",()=>loadAssetDetail(asset_id.value));
-
-/* ================= QR ================= */
-let qr;
-function openQRScanner(){
-  qr=new Html5Qrcode("qr-reader");
-  qr-reader.style.display="block";
-  closeQR.style.display="block";
-  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
-    asset_id.value=txt.trim();
-    loadAssetDetail(txt.trim());
-    closeQR();
-  });
-}
-function closeQR(){
-  if(qr) qr.stop();
-  qr-reader.style.display="none";
-  closeQR.style.display="none";
-}
-
-/* ================= PHOTO ================= */
-let images=[];
-const maxPhotos=4;
-function takePhoto(){
-  if(images.length>=maxPhotos){alert("ครบ 4 รูปแล้ว");return;}
-  cameraInput.click();
-}
-cameraInput.addEventListener("change",()=>{
-  const file=cameraInput.files[0];
-  if(!file) return;
-  const r=new FileReader();
-  r.onload=()=>{
-    images.push(r.result);
-    const img=document.createElement("img");
-    img.src=r.result;
-    preview.appendChild(img);
-    photo-count.innerText=images.length+" / "+maxPhotos;
-  };
-  r.readAsDataURL(file);
-});
-
-/* ================= SUBMIT ================= */
-async function submitWO(){
-  const btn=submitBtn;
-  btn.classList.add("loading");
-  btn.innerText="Sending...";
-
-  const payload={
-    asset_id:asset_id.value,
-    line:line.value,
-    problem:problem.value,
-    priority:priority.value,
-    owner:owner.value,
-    email:email.value,
-    phone:phone.value,
-    images:images
-  };
-
-  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify(payload)});
-  const d=await res.json();
-
-  if(d.status==="success"){
-    btn.classList.remove("loading");
-    btn.classList.add("success");
-    btn.innerText="✅ Created "+d.wo_id;
-    setTimeout(()=>location.reload(),1200);
-  }else{
-    alert("Error");
-    btn.innerText="Submit Work Order";
-    btn.classList.remove("loading");
+  } catch (err) {
+    return json({ status: "error", message: err.toString() });
   }
 }
-</script>
 
-</body>
-</html>
+// ================================
+// PDF
+// ================================
+function generatePdfFromWorkOrder(data) {
+  const copy = DriveApp.getFileById(SLIDE_TEMPLATE_ID)
+    .makeCopy(`WO_${data.wo_id}`);
+
+  const pres = SlidesApp.openById(copy.getId());
+  const slide = pres.getSlides()[0];
+
+  slide.replaceAllText("{{WO_ID}}", data.wo_id);
+  slide.replaceAllText("{{DATE}}", data.date);
+  slide.replaceAllText("{{ASSET_ID}}", data.asset_id);
+  slide.replaceAllText("{{LINE}}", data.line);
+  slide.replaceAllText("{{PROBLEM}}", data.problem);
+  slide.replaceAllText("{{PRIORITY}}", data.priority);
+
+  let x = 40;
+  data.photos.slice(0, 4).forEach(url => {
+    const id = url.match(/[-\w]{25,}/);
+    if (!id) return;
+    slide.insertImage(
+      DriveApp.getFileById(id[0]).getBlob(),
+      x, 320, 120, 90
+    );
+    x += 130;
+  });
+
+  pres.saveAndClose();
+
+  const pdf = copy.getBlob().setName(`WO_${data.wo_id}.pdf`);
+  const pdfFile = DriveApp.getFolderById(PDF_FOLDER_ID).createFile(pdf);
+
+  DriveApp.getFileById(copy.getId()).setTrashed(true);
+
+  return pdfFile.getUrl();
+}
+
+// ================================
+// EMAIL
+// ================================
+function sendWorkOrderEmail(data, pdfUrl) {
+  MailApp.sendEmail({
+    to: [data.email, ADMIN_EMAIL, MANAGER_EMAIL].join(","),
+    subject: `แจ้งรับใบงานซ่อม ${data.wo_id}`,
+    body:
+`เลขที่ใบงาน : ${data.wo_id}
+วันที่ : ${data.date}
+Asset : ${data.asset_id}
+Line : ${data.line}
+ปัญหา : ${data.problem}
+ความสำคัญ : ${data.priority}
+
+PDF:
+${pdfUrl}`
+  });
+}
+
+// ================================
+function json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}

@@ -300,3 +300,63 @@ async function submitWO(){
 </body>
 </html>
 
+<script>
+// ===============================
+// ASSET DETAIL (NEW)
+// ===============================
+
+async function loadAssetDetail(assetId){
+  if(!assetId){
+    document.getElementById("assetDetail").style.display="none";
+    return;
+  }
+
+  try{
+    const res = await fetch(API_URL + "?mode=assetDetail&asset_id=" + encodeURIComponent(assetId));
+    const a = await res.json();
+
+    if(!a || !a.asset_id){
+      document.getElementById("assetDetail").style.display="none";
+      return;
+    }
+
+    document.getElementById("assetDetail").style.display="block";
+
+    document.getElementById("assetImage").src = a.image_url || "";
+    document.getElementById("d_name").innerText = a.asset_name || "-";
+    document.getElementById("d_class").innerText = a.asset_class || "-";
+    document.getElementById("d_kw").innerText = a.kw || "-";
+    document.getElementById("d_hp").innerText = a.hp || "-";
+    document.getElementById("d_line").innerText = a.line || "-";
+    document.getElementById("d_location").innerText = a.location || "-";
+    document.getElementById("d_status").innerText = a.status || "-";
+
+  }catch(err){
+    console.error("Load asset detail error", err);
+  }
+}
+
+// ===============================
+// EVENT: SELECT ASSET
+// ===============================
+document.getElementById("asset_id").addEventListener("change",function(){
+  loadAssetDetail(this.value);
+});
+
+// ===============================
+// EVENT: QR SCAN (OVERRIDE)
+// ===============================
+let qr;
+function openQRScanner(){
+  document.getElementById("qr-reader").style.display="block";
+  document.getElementById("closeQR").style.display="block";
+  qr=new Html5Qrcode("qr-reader");
+  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
+    const asset = txt.trim();
+    document.getElementById("asset_id").value = asset;
+    loadAssetDetail(asset);   // ⭐ สำคัญ
+    closeQR();
+  });
+}
+</script>
+

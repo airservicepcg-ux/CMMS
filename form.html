@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,7 +57,6 @@ input, textarea, select {
   border: 1px solid #ccc;
 }
 
-/* ===== Submit Button UX ===== */
 .submit-btn {
   margin-top: 20px;
   width: 100%;
@@ -69,12 +69,6 @@ input, textarea, select {
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0 6px 0 #152a63;
-  transition: all 0.15s ease;
-}
-
-.submit-btn:active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 #152a63;
 }
 
 .submit-btn.loading {
@@ -108,6 +102,15 @@ input, textarea, select {
   border-radius: 6px;
   margin: 5px;
 }
+
+#assetDetail {
+  display:none;
+  border:1px solid #ddd;
+  padding:12px;
+  border-radius:8px;
+  margin-top:10px;
+  background:#fafafa;
+}
 </style>
 </head>
 
@@ -124,10 +127,9 @@ input, textarea, select {
 <select id="asset_id">
   <option value="">-- Select Asset --</option>
 </select>
-  
-  <div id="assetDetail" style="display:none; border:1px solid #ddd; padding:12px; border-radius:8px; margin-top:10px;">
-  <img id="assetImage" style="max-width:100%; border-radius:6px; margin-bottom:8px;" />
 
+<div id="assetDetail">
+  <img id="assetImage" style="max-width:100%; border-radius:6px; margin-bottom:8px;" />
   <div><b>ชื่อเครื่อง:</b> <span id="d_name"></span></div>
   <div><b>ประเภท:</b> <span id="d_class"></span></div>
   <div><b>กำลังไฟ:</b> <span id="d_kw"></span> kW / <span id="d_hp"></span> HP</div>
@@ -135,7 +137,6 @@ input, textarea, select {
   <div><b>Location:</b> <span id="d_location"></span></div>
   <div><b>Status:</b> <span id="d_status"></span></div>
 </div>
-
 
 <button type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
 <div id="qr-reader"></div>
@@ -162,201 +163,140 @@ input, textarea, select {
 <input id="owner"/>
 
 <label>Email</label>
-<input type="email" id="email" placeholder="example@email.com"/>
+<input type="email" id="email"/>
 
-<label>Phone Number</label>
-<input type="tel" id="phone" placeholder="08xxxxxxxx"/>
+<label>Phone</label>
+<input id="phone"/>
 
-<label>Photo (ถ่ายได้สูงสุด 4 รูป)</label>
+<label>Photo (สูงสุด 4 รูป)</label>
 <button type="button" class="photo-btn" onclick="takePhoto()">📸 ถ่ายรูป</button>
 <div id="photo-count">0 / 4</div>
 
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
 <div id="preview"></div>
 
-<button id="submitBtn" class="submit-btn" onclick="submitWO()">
-  Submit Work Order
-</button>
+<button id="submitBtn" class="submit-btn" onclick="submitWO()">Submit Work Order</button>
 
 </div>
 
 <script>
+/* ================= CONFIG ================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbxqmuz8OGIeATVLwpsC2xKX-8fZWjzwFch6v_Q50LiqBmXofmkw6xdUoogLgILjtdS5fQ/exec";
 
-/* NAV */
+/* ================= NAV ================= */
 function goHome(){
   location.href="https://airservicepcg-ux.github.io/CMMS/";
 }
 
-/* LOAD ASSET */
+/* ================= LOAD ASSET LIST ================= */
 fetch(API_URL+"?mode=asset")
 .then(r=>r.json())
 .then(list=>{
   const sel=document.getElementById("asset_id");
-  list.forEach(a=>{
+  list.forEach(id=>{
     const o=document.createElement("option");
-    o.value=a; o.textContent=a;
+    o.value=id;
+    o.textContent=id;
     sel.appendChild(o);
   });
 });
 
-/* QR */
+/* ================= ASSET DETAIL ================= */
+async function loadAssetDetail(assetId){
+  if(!assetId){
+    assetDetail.style.display="none";
+    return;
+  }
+  const res = await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
+  const a = await res.json();
+
+  if(!a.asset_id){
+    assetDetail.style.display="none";
+    return;
+  }
+
+  assetDetail.style.display="block";
+  assetImage.src = a.image_url || "";
+  d_name.innerText = a.asset_name || "-";
+  d_class.innerText = a.asset_class || "-";
+  d_kw.innerText = a.kw || "-";
+  d_hp.innerText = a.hp || "-";
+  d_line.innerText = a.line || "-";
+  d_location.innerText = a.location || "-";
+  d_status.innerText = a.status || "-";
+}
+
+asset_id.addEventListener("change",()=>loadAssetDetail(asset_id.value));
+
+/* ================= QR ================= */
 let qr;
 function openQRScanner(){
-  document.getElementById("qr-reader").style.display="block";
-  document.getElementById("closeQR").style.display="block";
   qr=new Html5Qrcode("qr-reader");
+  qr-reader.style.display="block";
+  closeQR.style.display="block";
+
   qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
-    document.getElementById("asset_id").value=txt.trim();
+    asset_id.value=txt.trim();
+    loadAssetDetail(txt.trim());
     closeQR();
   });
 }
 function closeQR(){
   if(qr) qr.stop();
-  document.getElementById("qr-reader").style.display="none";
-  document.getElementById("closeQR").style.display="none";
+  qr-reader.style.display="none";
+  closeQR.style.display="none";
 }
 
-/* PHOTO */
+/* ================= PHOTO ================= */
 let images=[];
-const maxPhotos=4;
-
 function takePhoto(){
-  if(images.length>=maxPhotos){
-    alert("ครบ 4 รูปแล้ว");
-    return;
-  }
-  document.getElementById("cameraInput").click();
+  if(images.length>=4){ alert("ครบ 4 รูปแล้ว"); return; }
+  cameraInput.click();
 }
-
-document.getElementById("cameraInput").addEventListener("change",()=>{
-  const file=cameraInput.files[0];
-  if(!file) return;
+cameraInput.addEventListener("change",()=>{
+  const f=cameraInput.files[0];
+  if(!f) return;
   const r=new FileReader();
   r.onload=()=>{
     images.push(r.result);
     const img=document.createElement("img");
     img.src=r.result;
     preview.appendChild(img);
-    document.getElementById("photo-count").textContent=images.length+" / "+maxPhotos;
+    photo-count.innerText=images.length+" / 4";
   };
-  r.readAsDataURL(file);
+  r.readAsDataURL(f);
 });
 
-/* SUBMIT WITH UX */
+/* ================= SUBMIT ================= */
 async function submitWO(){
-  const btn=document.getElementById("submitBtn");
-  if(btn.classList.contains("loading")) return;
+  submitBtn.classList.add("loading");
+  submitBtn.innerText="⏳ Sending...";
 
-  btn.classList.add("loading");
-  btn.disabled=true;
-  btn.innerText="⏳ Sending...";
+  const payload={
+    asset_id:asset_id.value,
+    line:line.value,
+    problem:problem.value,
+    priority:priority.value,
+    owner:owner.value,
+    email:email.value,
+    phone:phone.value,
+    images:images
+  };
 
-  try{
-    const payload={
-      asset_id:asset_id.value,
-      line:line.value,
-      problem:problem.value,
-      priority:priority.value,
-      owner:owner.value,
-      email:email.value,
-      phone:phone.value,
-      images:images
-    };
+  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify(payload)});
+  const d=await res.json();
 
-    const res=await fetch(API_URL,{
-      method:"POST",
-      body:JSON.stringify(payload)
-    });
-
-    const d=await res.json();
-
-    if(d.status==="success"){
-      btn.classList.remove("loading");
-      btn.classList.add("success");
-      btn.innerText="✅ Created";
-
-      alert("Created "+d.wo_id);
-
-      setTimeout(()=>{
-        btn.classList.remove("success");
-        btn.innerText="Submit Work Order";
-        btn.disabled=false;
-        location.reload();
-      },1200);
-    }else{
-      throw new Error(d.message||"Submit failed");
-    }
-  }catch(err){
-    alert("❌ Error sending data");
-    console.error(err);
-    btn.classList.remove("loading");
-    btn.innerText="Submit Work Order";
-    btn.disabled=false;
+  if(d.status==="success"){
+    submitBtn.classList.remove("loading");
+    submitBtn.classList.add("success");
+    submitBtn.innerText="✅ Created";
+    alert("Created "+d.wo_id);
+    setTimeout(()=>location.reload(),1200);
+  }else{
+    alert("Error");
   }
 }
 </script>
 
 </body>
 </html>
-
-<script>
-// ===============================
-// ASSET DETAIL (NEW)
-// ===============================
-
-async function loadAssetDetail(assetId){
-  if(!assetId){
-    document.getElementById("assetDetail").style.display="none";
-    return;
-  }
-
-  try{
-    const res = await fetch(API_URL + "?mode=assetDetail&asset_id=" + encodeURIComponent(assetId));
-    const a = await res.json();
-
-    if(!a || !a.asset_id){
-      document.getElementById("assetDetail").style.display="none";
-      return;
-    }
-
-    document.getElementById("assetDetail").style.display="block";
-
-    document.getElementById("assetImage").src = a.image_url || "";
-    document.getElementById("d_name").innerText = a.asset_name || "-";
-    document.getElementById("d_class").innerText = a.asset_class || "-";
-    document.getElementById("d_kw").innerText = a.kw || "-";
-    document.getElementById("d_hp").innerText = a.hp || "-";
-    document.getElementById("d_line").innerText = a.line || "-";
-    document.getElementById("d_location").innerText = a.location || "-";
-    document.getElementById("d_status").innerText = a.status || "-";
-
-  }catch(err){
-    console.error("Load asset detail error", err);
-  }
-}
-
-// ===============================
-// EVENT: SELECT ASSET
-// ===============================
-document.getElementById("asset_id").addEventListener("change",function(){
-  loadAssetDetail(this.value);
-});
-
-// ===============================
-// EVENT: QR SCAN (OVERRIDE)
-// ===============================
-let qr;
-function openQRScanner(){
-  document.getElementById("qr-reader").style.display="block";
-  document.getElementById("closeQR").style.display="block";
-  qr=new Html5Qrcode("qr-reader");
-  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
-    const asset = txt.trim();
-    document.getElementById("asset_id").value = asset;
-    loadAssetDetail(asset);   // ⭐ สำคัญ
-    closeQR();
-  });
-}
-</script>
-

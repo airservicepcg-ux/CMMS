@@ -114,7 +114,7 @@ input, textarea, select{
 </div>
 
 <div id="qr-reader"></div>
-<button id="closeQR" onclick="closeQR()" style="display:none;">❌ Close Scanner</button>
+<button id="closeQR" style="display:none;" onclick="closeQR()">❌ Close Scanner</button>
 
 <label>Line</label>
 <select id="line">
@@ -156,9 +156,21 @@ input, textarea, select{
 
 <script>
 /* ==============================
- CONFIG (🔴 Web App ตัวจริง)
+ CONFIG
 ============================== */
-const API_URL = "https://script.google.com/macros/s/AKfycbzRfWNIS9k7psXzY8Zi_YThivvrvEtzSx4RfV8_GeeRQQ_1yRN3DA6R6E3VDFU5xJAmHQ/exec";
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbzRfWNIS9k7psXzY8Zi_YThivvrvEtzSx4RfV8_GeeRQQ_1yRN3DA6R6E3VDFU5xJAmHQ/exec";
+
+/* ==============================
+ DOM CACHE (ปลอดภัย)
+============================== */
+const el = id => document.getElementById(id);
+
+const assetSelect = el("asset_id");
+const assetDetail = el("assetDetail");
+const assetImage  = el("assetImage");
+const submitBtn   = el("submitBtn");
+const statusText  = el("status");
 
 /* ==============================
  NAV
@@ -171,17 +183,20 @@ function goHome(){
  LOAD ASSET DROPDOWN
 ============================== */
 fetch(API_URL + "?mode=asset")
-.then(r => r.json())
-.then(list => {
-  const sel = document.getElementById("asset_id");
-  sel.innerHTML = `<option value="">-- Select Asset --</option>`;
-  list.forEach(id=>{
-    const o=document.createElement("option");
-    o.value=id;
-    o.textContent=id;
-    sel.appendChild(o);
+  .then(r => r.json())
+  .then(list => {
+    assetSelect.innerHTML =
+      `<option value="">-- Select Asset --</option>`;
+    list.forEach(id=>{
+      const o=document.createElement("option");
+      o.value=id;
+      o.textContent=id;
+      assetSelect.appendChild(o);
+    });
+  })
+  .catch(err=>{
+    console.error("Load asset error", err);
   });
-});
 
 /* ==============================
  ASSET DETAIL
@@ -191,40 +206,55 @@ async function loadAssetDetail(assetId){
     assetDetail.style.display="none";
     return;
   }
-  const r = await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
+  const r = await fetch(
+    API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId)
+  );
   const a = await r.json();
   if(a.error) return;
 
   assetDetail.style.display="block";
   assetImage.src = a.image_url || "";
-  d_name.innerText = a.asset_name;
-  d_class.innerText = a.asset_class;
-  d_kw.innerText = a.kw;
-  d_hp.innerText = a.hp;
-  d_line.innerText = a.line;
-  d_location.innerText = a.location;
-  d_status.innerText = a.status;
+  el("d_name").innerText = a.asset_name || "";
+  el("d_class").innerText = a.asset_class || "";
+  el("d_kw").innerText = a.kw || "";
+  el("d_hp").innerText = a.hp || "";
+  el("d_line").innerText = a.line || "";
+  el("d_location").innerText = a.location || "";
+  el("d_status").innerText = a.status || "";
 }
-asset_id.addEventListener("change",()=>loadAssetDetail(asset_id.value));
+
+assetSelect.addEventListener("change",()=>{
+  loadAssetDetail(assetSelect.value);
+});
 
 /* ==============================
  QR SCAN
 ============================== */
 let qr;
+
 function openQRScanner(){
-  qr-reader.style.display="block";
-  closeQR.style.display="block";
+  el("qr-reader").style.display="block";
+  el("closeQR").style.display="block";
+
   qr = new Html5Qrcode("qr-reader");
-  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
-    asset_id.value = txt.trim();
-    loadAssetDetail(txt.trim());
-    closeQR();
-  });
+  qr.start(
+    { facingMode:"environment" },
+    { fps:10, qrbox:250 },
+    txt=>{
+      assetSelect.value = txt.trim();
+      loadAssetDetail(txt.trim());
+      closeQR();
+    }
+  );
 }
+
 function closeQR(){
-  if(qr) qr.stop();
-  qr-reader.style.display="none";
-  closeQR.style.display="none";
+  if(qr){
+    qr.stop().catch(()=>{});
+    qr = null;
+  }
+  el("qr-reader").style.display="none";
+  el("closeQR").style.display="none";
 }
 
 /* ==============================
@@ -238,19 +268,21 @@ function takePhoto(){
     alert("ถ่ายได้สูงสุด 4 รูป");
     return;
   }
-  cameraInput.click();
+  el("cameraInput").click();
 }
 
-cameraInput.addEventListener("change",()=>{
-  const file=cameraInput.files[0];
+el("cameraInput").addEventListener("change",()=>{
+  const file = el("cameraInput").files[0];
   if(!file) return;
-  const r=new FileReader();
-  r.onload=()=>{
+
+  const r = new FileReader();
+  r.onload = ()=>{
     images.push(r.result);
-    const img=document.createElement("img");
-    img.src=r.result;
-    preview.appendChild(img);
-    photo-count.innerText=images.length+" / "+maxPhotos;
+    const img = document.createElement("img");
+    img.src = r.result;
+    el("preview").appendChild(img);
+    el("photo-count").innerText =
+      images.length+" / "+maxPhotos;
   };
   r.readAsDataURL(file);
 });
@@ -259,23 +291,23 @@ cameraInput.addEventListener("change",()=>{
  SUBMIT
 ============================== */
 async function submitWO(){
-  if(!asset_id.value || !problem.value){
+  if(!assetSelect.value || !el("problem").value){
     alert("กรุณาเลือก Asset และกรอก Problem");
     return;
   }
 
   submitBtn.disabled = true;
-  status.innerText = "⏳ กำลังส่งข้อมูล...";
+  statusText.innerText = "⏳ กำลังส่งข้อมูล...";
 
-  const payload={
-    asset_id:asset_id.value,
-    line:line.value,
-    problem:problem.value,
-    priority:priority.value,
-    owner:owner.value,
-    email:email.value,
-    phone:phone.value,
-    images:images
+  const payload = {
+    asset_id: assetSelect.value,
+    line: el("line").value,
+    problem: el("problem").value,
+    priority: el("priority").value,
+    owner: el("owner").value,
+    email: el("email").value,
+    phone: el("phone").value,
+    images: images
   };
 
   try{
@@ -284,7 +316,7 @@ async function submitWO(){
       headers:{
         "Content-Type":"application/json"
       },
-      body:JSON.stringify(payload)
+      body: JSON.stringify(payload)
     });
     const d = await r.json();
 
@@ -294,15 +326,17 @@ async function submitWO(){
     }else{
       alert("❌ Error: "+(d.message||"Unknown"));
       submitBtn.disabled=false;
-      status.innerText="";
+      statusText.innerText="";
     }
   }catch(err){
+    console.error(err);
     alert("❌ Network / GAS Error");
     submitBtn.disabled=false;
-    status.innerText="";
+    statusText.innerText="";
   }
 }
 </script>
 
 </body>
 </html>
+

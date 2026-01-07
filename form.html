@@ -77,10 +77,7 @@ input, textarea, select{
   font-weight:bold;
 }
 
-/* =================================================
-   ✅ จุดที่แก้ไขสำคัญ (แทนบรรทัด 77–84 เดิม)
-   แสดงรูปใหญ่ ชัด เต็ม card
-================================================= */
+/* ===== รูป Preview (ที่ถ่ายใหม่) ===== */
 #preview img{
   width:100%;
   max-height:300px;
@@ -89,12 +86,19 @@ input, textarea, select{
   margin-top:10px;
 }
 
-/* QR */
+/* ===== รูป Asset จาก Drive ===== */
+#assetImage{
+  width:100%;
+  max-height:260px;
+  object-fit:contain;
+  border-radius:8px;
+  margin-bottom:10px;
+}
+
 #qr-reader{
   display:none;
   margin-top:10px;
 }
-
 .status-text{
   margin-top:10px;
   font-weight:bold;
@@ -116,7 +120,7 @@ input, textarea, select{
 <button type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
 
 <div id="assetDetail" style="display:none;border:1px solid #ddd;padding:12px;border-radius:8px;margin-top:10px;">
-  <img id="assetImage" style="max-width:100%;border-radius:6px;margin-bottom:8px;" />
+  <img id="assetImage" />
   <div><b>ชื่อเครื่อง:</b> <span id="d_name"></span></div>
   <div><b>ประเภท:</b> <span id="d_class"></span></div>
   <div><b>กำลังไฟ:</b> <span id="d_kw"></span> kW / <span id="d_hp"></span> HP</div>
@@ -178,6 +182,14 @@ const API_URL =
 ============================== */
 const el = id => document.getElementById(id);
 
+/* ===== แปลง Google Drive URL → Direct Image ===== */
+function driveToImage(url){
+  if(!url) return "";
+  const m = url.match(/\/d\/([^\/]+)/);
+  if(!m) return url;
+  return "https://drive.google.com/uc?export=view&id=" + m[1];
+}
+
 /* ==============================
  NAV
 ============================== */
@@ -186,7 +198,7 @@ function goHome(){
 }
 
 /* ==============================
- LOAD ASSET
+ LOAD ASSET LIST
 ============================== */
 fetch(API_URL + "?mode=asset")
 .then(r => r.json())
@@ -209,12 +221,14 @@ async function loadAssetDetail(assetId){
     el("assetDetail").style.display="none";
     return;
   }
-  const r = await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
+  const r = await fetch(
+    API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId)
+  );
   const a = await r.json();
   if(a.error) return;
 
   el("assetDetail").style.display="block";
-  el("assetImage").src = a.image_url || "";
+  el("assetImage").src = driveToImage(a.image_url);
   el("d_name").innerText = a.asset_name || "";
   el("d_class").innerText = a.asset_class || "";
   el("d_kw").innerText = a.kw || "";
@@ -249,7 +263,7 @@ function closeQR(){
 }
 
 /* ==============================
- PHOTO
+ PHOTO (Camera)
 ============================== */
 let images=[];
 const maxPhotos=4;
@@ -265,6 +279,7 @@ function takePhoto(){
 el("cameraInput").addEventListener("change",()=>{
   const file = el("cameraInput").files[0];
   if(!file) return;
+
   const r=new FileReader();
   r.onload=()=>{
     images.push(r.result);
@@ -299,18 +314,24 @@ async function submitWO(){
     images:images
   };
 
-  const r = await fetch(API_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify(payload)
-  });
-  const d = await r.json();
+  try{
+    const r = await fetch(API_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify(payload)
+    });
+    const d = await r.json();
 
-  if(d.status==="success"){
-    alert("✅ Created "+d.wo_id);
-    location.reload();
-  }else{
-    alert("❌ Error");
+    if(d.status==="success"){
+      alert("✅ Created "+d.wo_id);
+      location.reload();
+    }else{
+      alert("❌ Error");
+      el("submitBtn").disabled=false;
+      el("status").innerText="";
+    }
+  }catch(err){
+    alert("❌ Network / GAS Error");
     el("submitBtn").disabled=false;
     el("status").innerText="";
   }

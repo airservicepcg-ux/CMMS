@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,7 +76,7 @@ input, textarea, select{
   font-weight:bold;
 }
 
-/* ===== รูป Preview (ที่ถ่ายใหม่) ===== */
+/* ===== รูปหน้างาน (Preview) ===== */
 #preview img{
   width:100%;
   max-height:300px;
@@ -86,19 +85,19 @@ input, textarea, select{
   margin-top:10px;
 }
 
-/* ===== รูป Asset จาก Drive ===== */
-#assetImage{
-  width:100%;
-  max-height:260px;
-  object-fit:contain;
-  border-radius:8px;
-  margin-bottom:10px;
-}
-
 #qr-reader{
   display:none;
   margin-top:10px;
 }
+
+.asset-box{
+  border:1px solid #ddd;
+  padding:12px;
+  border-radius:8px;
+  margin-top:10px;
+  background:#fafafa;
+}
+
 .status-text{
   margin-top:10px;
   font-weight:bold;
@@ -119,14 +118,16 @@ input, textarea, select{
 <select id="asset_id"></select>
 <button type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
 
-<div id="assetDetail" style="display:none;border:1px solid #ddd;padding:12px;border-radius:8px;margin-top:10px;">
-  <img id="assetImage" />
+<!-- ===== Asset Detail (NO IMAGE) ===== -->
+<div id="assetDetail" class="asset-box" style="display:none;">
   <div><b>ชื่อเครื่อง:</b> <span id="d_name"></span></div>
   <div><b>ประเภท:</b> <span id="d_class"></span></div>
   <div><b>กำลังไฟ:</b> <span id="d_kw"></span> kW / <span id="d_hp"></span> HP</div>
   <div><b>Line:</b> <span id="d_line"></span></div>
   <div><b>Location:</b> <span id="d_location"></span></div>
   <div><b>Status:</b> <span id="d_status"></span></div>
+  <div style="margin-top:6px;"><b>รายละเอียด:</b></div>
+  <div id="d_desc" style="white-space:pre-wrap;"></div>
 </div>
 
 <div id="qr-reader"></div>
@@ -140,7 +141,7 @@ input, textarea, select{
 </select>
 
 <label>Problem</label>
-<textarea id="problem"></textarea>
+<textarea id="problem" placeholder="อธิบายอาการ / ปัญหาที่พบ"></textarea>
 
 <label>Priority</label>
 <select id="priority">
@@ -159,7 +160,7 @@ input, textarea, select{
 <label>Phone</label>
 <input type="tel" id="phone"/>
 
-<label>Photo (max 4)</label>
+<label>Photo (หน้างานจริง, max 4)</label>
 <button type="button" class="photo-btn" onclick="takePhoto()">📸 Take Photo</button>
 <div id="photo-count">0 / 4</div>
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
@@ -181,14 +182,6 @@ const API_URL =
  UTIL
 ============================== */
 const el = id => document.getElementById(id);
-
-/* ===== แปลง Google Drive URL → Direct Image ===== */
-function driveToImage(url){
-  if(!url) return "";
-  const m = url.match(/\/d\/([^\/]+)/);
-  if(!m) return url;
-  return "https://drive.google.com/uc?export=view&id=" + m[1];
-}
 
 /* ==============================
  NAV
@@ -214,7 +207,7 @@ fetch(API_URL + "?mode=asset")
 });
 
 /* ==============================
- ASSET DETAIL
+ ASSET DETAIL (TEXT ONLY)
 ============================== */
 async function loadAssetDetail(assetId){
   if(!assetId){
@@ -228,7 +221,6 @@ async function loadAssetDetail(assetId){
   if(a.error) return;
 
   el("assetDetail").style.display="block";
-  el("assetImage").src = driveToImage(a.image_url);
   el("d_name").innerText = a.asset_name || "";
   el("d_class").innerText = a.asset_class || "";
   el("d_kw").innerText = a.kw || "";
@@ -236,6 +228,7 @@ async function loadAssetDetail(assetId){
   el("d_line").innerText = a.line || "";
   el("d_location").innerText = a.location || "";
   el("d_status").innerText = a.status || "";
+  el("d_desc").innerText = a.description || "";
 }
 
 el("asset_id").addEventListener("change",e=>{
@@ -263,7 +256,7 @@ function closeQR(){
 }
 
 /* ==============================
- PHOTO (Camera)
+ PHOTO (หน้างานจริง)
 ============================== */
 let images=[];
 const maxPhotos=4;

@@ -1,164 +1,170 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>Create Work Order</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Create Work Order</title>
 
-  <style>
-    body{
-      font-family: Arial, sans-serif;
-      background:#f5f6f8;
-      margin:0;
-      padding:0;
-    }
-    header{
-      background:#1f3c88;
-      color:#fff;
-      padding:16px;
-      font-size:20px;
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
-    header button{
-      background:#fff;
-      border:none;
-      padding:6px 12px;
-      border-radius:6px;
-      cursor:pointer;
-    }
-    .container{
-      max-width:720px;
-      margin:20px auto;
-      background:#fff;
-      border-radius:12px;
-      padding:20px;
-    }
-    label{
-      font-weight:bold;
-      display:block;
-      margin-top:16px;
-    }
-    select, textarea, input{
-      width:100%;
-      padding:10px;
-      margin-top:6px;
-      border-radius:8px;
-      border:1px solid #ccc;
-      font-size:16px;
-    }
-    textarea{
-      min-height:80px;
-    }
-    .asset-box{
-      margin-top:12px;
-      padding:14px;
-      background:#fafafa;
-      border:1px solid #ddd;
-      border-radius:10px;
-      line-height:1.6;
-    }
-    .submit-btn{
-      margin-top:24px;
-      width:100%;
-      padding:14px;
-      font-size:18px;
-      background:#1f3c88;
-      color:#fff;
-      border:none;
-      border-radius:10px;
-      cursor:pointer;
-    }
-    .submit-btn:disabled{
-      background:#999;
-      cursor:not-allowed;
-    }
-  </style>
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:20px;
+}
+.top-nav{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:#1f3c88;
+  color:#fff;
+  padding:12px 20px;
+  border-radius:10px;
+  margin-bottom:20px;
+}
+.top-nav button{
+  background:#fff;
+  color:#1f3c88;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+}
+.card{
+  max-width:520px;
+  background:#fff;
+  padding:24px;
+  border-radius:12px;
+  margin:auto;
+}
+label{
+  font-weight:bold;
+  margin-top:12px;
+  display:block;
+}
+input, textarea, select{
+  width:100%;
+  padding:10px;
+  margin-top:6px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+.submit-btn{
+  margin-top:20px;
+  width:100%;
+  padding:12px;
+  background:#1f3c88;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+.submit-btn:disabled{
+  background:#999;
+}
+.asset-box{
+  margin-top:10px;
+  border:1px solid #ddd;
+  padding:12px;
+  border-radius:8px;
+  background:#fafafa;
+  line-height:1.6;
+}
+</style>
 </head>
 
 <body>
 
-<header>
-  <button onclick="location.href='index.html'">← Home</button>
-  Create Work Order
-</header>
+<div class="top-nav">
+  <button onclick="goHome()">⬅ Home</button>
+  <b>Create Work Order</b>
+</div>
 
-<div class="container">
+<div class="card">
 
-  <label>Asset ID</label>
-  <select id="asset_id" onchange="loadAsset()"></select>
+<label>Asset ID</label>
+<select id="asset_id"></select>
 
-  <div id="assetDetail" class="asset-box" style="display:none;"></div>
+<div id="assetDetail" class="asset-box" style="display:none;"></div>
 
-  <label>Line</label>
-  <select id="line">
-    <option>Line 1</option>
-    <option>Line 2</option>
-    <option>Line 3</option>
-    <option>Line 4</option>
-    <option>Line 5</option>
-  </select>
+<label>Line</label>
+<select id="line">
+  <option>Line 1</option>
+  <option>Line 2</option>
+  <option>Line 3</option>
+  <option>Line 4</option>
+  <option>Line 5</option>
+</select>
 
-  <label>Problem</label>
-  <textarea id="problem" placeholder="อธิบายอาการ / ปัญหาที่พบ"></textarea>
+<label>Problem</label>
+<textarea id="problem" placeholder="อธิบายอาการ / ปัญหาที่พบ"></textarea>
 
-  <label>Priority</label>
-  <select id="priority">
-    <option>Critical</option>
-    <option>High</option>
-    <option>Medium</option>
-    <option>Low</option>
-  </select>
+<label>Priority</label>
+<select id="priority">
+  <option>Critical</option>
+  <option>High</option>
+  <option>Medium</option>
+  <option>Low</option>
+</select>
 
-  <label>Owner</label>
-  <input id="owner" placeholder="ชื่อผู้แจ้งงาน">
+<label>Owner</label>
+<input id="owner" placeholder="ชื่อผู้แจ้งงาน"/>
 
-  <label>Email</label>
-  <input id="email" type="email" placeholder="example@email.com">
+<label>Email</label>
+<input type="email" id="email"/>
 
-  <label>Phone</label>
-  <input id="phone" placeholder="เบอร์โทร">
+<label>Phone</label>
+<input type="tel" id="phone"/>
 
-  <button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
+<button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
 
 </div>
 
 <script>
-/* =========================
-   CONFIG
-========================= */
+/* ==============================
+ CONFIG
+============================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbzRfWNIS9k7psXzY8Zi_YThivvrvEtzSx4RfV8_GeeRQQ_1yRN3DA6R6E3VDFU5xJAmHQ/exec";
 
-/* =========================
-   LOAD ASSET LIST
-========================= */
-async function loadAssets(){
-  const res = await fetch(API_URL + "?action=getAssets");
-  const data = await res.json();
-
-  const sel = document.getElementById("asset_id");
-  sel.innerHTML = "<option value=''>-- Select Asset --</option>";
-
-  data.forEach(a=>{
-    const opt = document.createElement("option");
-    opt.value = a;
-    opt.textContent = a;
-    sel.appendChild(opt);
-  });
+/* ==============================
+ NAV
+============================== */
+function goHome(){
+  location.href="index.html";
 }
 
-/* =========================
-   LOAD ASSET DETAIL
-========================= */
-async function loadAsset(){
-  const assetId = asset_id.value;
-  if(!assetId) return;
+/* ==============================
+ LOAD ASSET LIST
+============================== */
+fetch(API_URL + "?mode=asset")
+.then(r => r.json())
+.then(list => {
+  const sel = document.getElementById("asset_id");
+  sel.innerHTML = `<option value="">-- Select Asset --</option>`;
+  list.forEach(id=>{
+    const o=document.createElement("option");
+    o.value=id;
+    o.textContent=id;
+    sel.appendChild(o);
+  });
+});
 
-  const res = await fetch(API_URL + "?action=getAsset&id=" + assetId);
-  const a = await res.json();
+/* ==============================
+ LOAD ASSET DETAIL
+============================== */
+async function loadAssetDetail(assetId){
+  if(!assetId){
+    assetDetail.style.display="none";
+    return;
+  }
+  const r = await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
+  const a = await r.json();
+  if(a.error) return;
 
-  assetDetail.style.display = "block";
+  assetDetail.style.display="block";
   assetDetail.innerHTML = `
     <b>ชื่อเครื่อง:</b> ${a.asset_name}<br>
     <b>ประเภท:</b> ${a.asset_class}<br>
@@ -170,9 +176,11 @@ async function loadAsset(){
   `;
 }
 
-/* =========================
-   SUBMIT WORK ORDER
-========================= */
+asset_id.addEventListener("change",()=>loadAssetDetail(asset_id.value));
+
+/* ==============================
+ SUBMIT WORK ORDER (✔ FIXED)
+============================== */
 async function submitWO(){
   const btn = document.querySelector(".submit-btn");
   btn.disabled = true;
@@ -189,38 +197,28 @@ async function submitWO(){
   };
 
   try{
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body: JSON.stringify(payload)
+    const res = await fetch(API_URL,{
+      method:"POST",
+      body: JSON.stringify(payload)   // ✅ สำคัญ: ไม่มี headers
     });
 
-    if(!res.ok){
-      throw new Error("HTTP " + res.status);
-    }
+    const text = await res.text();
+    const data = JSON.parse(text);
 
-    const data = await res.json();
-
-    if(data.status === "success"){
-      alert("✅ Created Work Order\n" + data.wo_id);
+    if(data.status==="success"){
+      alert("Created "+data.wo_id);
       location.reload();
     }else{
-      alert("❌ GAS Error: " + (data.message || ""));
+      alert("GAS Error\n"+text);
     }
-
   }catch(err){
     console.error(err);
-    alert("❌ Network / GAS Error\n" + err.message);
+    alert("Network / GAS Error\n"+err.message);
   }finally{
-    btn.disabled = false;
-    btn.innerText = "Submit Work Order";
+    btn.disabled=false;
+    btn.innerText="Submit Work Order";
   }
 }
-
-/* INIT */
-loadAssets();
 </script>
 
 </body>

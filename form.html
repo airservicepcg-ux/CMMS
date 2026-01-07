@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,14 +76,25 @@ input, textarea, select{
   border-radius:6px;
   font-weight:bold;
 }
+
+/* =================================================
+   ✅ จุดที่แก้ไขสำคัญ (แทนบรรทัด 77–84 เดิม)
+   แสดงรูปใหญ่ ชัด เต็ม card
+================================================= */
 #preview img{
-  width:80px;
-  height:80px;
-  object-fit:cover;
-  border-radius:6px;
-  margin:5px;
+  width:100%;
+  max-height:300px;
+  object-fit:contain;
+  border-radius:8px;
+  margin-top:10px;
 }
-#qr-reader{display:none;margin-top:10px;}
+
+/* QR */
+#qr-reader{
+  display:none;
+  margin-top:10px;
+}
+
 .status-text{
   margin-top:10px;
   font-weight:bold;
@@ -162,15 +174,9 @@ const API_URL =
   "https://script.google.com/macros/s/AKfycbzRfWNIS9k7psXzY8Zi_YThivvrvEtzSx4RfV8_GeeRQQ_1yRN3DA6R6E3VDFU5xJAmHQ/exec";
 
 /* ==============================
- DOM CACHE (ปลอดภัย)
+ UTIL
 ============================== */
 const el = id => document.getElementById(id);
-
-const assetSelect = el("asset_id");
-const assetDetail = el("assetDetail");
-const assetImage  = el("assetImage");
-const submitBtn   = el("submitBtn");
-const statusText  = el("status");
 
 /* ==============================
  NAV
@@ -180,40 +186,35 @@ function goHome(){
 }
 
 /* ==============================
- LOAD ASSET DROPDOWN
+ LOAD ASSET
 ============================== */
 fetch(API_URL + "?mode=asset")
-  .then(r => r.json())
-  .then(list => {
-    assetSelect.innerHTML =
-      `<option value="">-- Select Asset --</option>`;
-    list.forEach(id=>{
-      const o=document.createElement("option");
-      o.value=id;
-      o.textContent=id;
-      assetSelect.appendChild(o);
-    });
-  })
-  .catch(err=>{
-    console.error("Load asset error", err);
+.then(r => r.json())
+.then(list => {
+  const sel = el("asset_id");
+  sel.innerHTML = `<option value="">-- Select Asset --</option>`;
+  list.forEach(id=>{
+    const o=document.createElement("option");
+    o.value=id;
+    o.textContent=id;
+    sel.appendChild(o);
   });
+});
 
 /* ==============================
  ASSET DETAIL
 ============================== */
 async function loadAssetDetail(assetId){
   if(!assetId){
-    assetDetail.style.display="none";
+    el("assetDetail").style.display="none";
     return;
   }
-  const r = await fetch(
-    API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId)
-  );
+  const r = await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
   const a = await r.json();
   if(a.error) return;
 
-  assetDetail.style.display="block";
-  assetImage.src = a.image_url || "";
+  el("assetDetail").style.display="block";
+  el("assetImage").src = a.image_url || "";
   el("d_name").innerText = a.asset_name || "";
   el("d_class").innerText = a.asset_class || "";
   el("d_kw").innerText = a.kw || "";
@@ -223,36 +224,26 @@ async function loadAssetDetail(assetId){
   el("d_status").innerText = a.status || "";
 }
 
-assetSelect.addEventListener("change",()=>{
-  loadAssetDetail(assetSelect.value);
+el("asset_id").addEventListener("change",e=>{
+  loadAssetDetail(e.target.value);
 });
 
 /* ==============================
  QR SCAN
 ============================== */
 let qr;
-
 function openQRScanner(){
   el("qr-reader").style.display="block";
   el("closeQR").style.display="block";
-
   qr = new Html5Qrcode("qr-reader");
-  qr.start(
-    { facingMode:"environment" },
-    { fps:10, qrbox:250 },
-    txt=>{
-      assetSelect.value = txt.trim();
-      loadAssetDetail(txt.trim());
-      closeQR();
-    }
-  );
+  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
+    el("asset_id").value = txt.trim();
+    loadAssetDetail(txt.trim());
+    closeQR();
+  });
 }
-
 function closeQR(){
-  if(qr){
-    qr.stop().catch(()=>{});
-    qr = null;
-  }
+  if(qr){ qr.stop().catch(()=>{}); qr=null; }
   el("qr-reader").style.display="none";
   el("closeQR").style.display="none";
 }
@@ -274,15 +265,13 @@ function takePhoto(){
 el("cameraInput").addEventListener("change",()=>{
   const file = el("cameraInput").files[0];
   if(!file) return;
-
-  const r = new FileReader();
-  r.onload = ()=>{
+  const r=new FileReader();
+  r.onload=()=>{
     images.push(r.result);
-    const img = document.createElement("img");
-    img.src = r.result;
+    const img=document.createElement("img");
+    img.src=r.result;
     el("preview").appendChild(img);
-    el("photo-count").innerText =
-      images.length+" / "+maxPhotos;
+    el("photo-count").innerText = images.length+" / "+maxPhotos;
   };
   r.readAsDataURL(file);
 });
@@ -291,52 +280,42 @@ el("cameraInput").addEventListener("change",()=>{
  SUBMIT
 ============================== */
 async function submitWO(){
-  if(!assetSelect.value || !el("problem").value){
+  if(!el("asset_id").value || !el("problem").value){
     alert("กรุณาเลือก Asset และกรอก Problem");
     return;
   }
 
-  submitBtn.disabled = true;
-  statusText.innerText = "⏳ กำลังส่งข้อมูล...";
+  el("submitBtn").disabled=true;
+  el("status").innerText="⏳ กำลังส่งข้อมูล...";
 
-  const payload = {
-    asset_id: assetSelect.value,
-    line: el("line").value,
-    problem: el("problem").value,
-    priority: el("priority").value,
-    owner: el("owner").value,
-    email: el("email").value,
-    phone: el("phone").value,
-    images: images
+  const payload={
+    asset_id:el("asset_id").value,
+    line:el("line").value,
+    problem:el("problem").value,
+    priority:el("priority").value,
+    owner:el("owner").value,
+    email:el("email").value,
+    phone:el("phone").value,
+    images:images
   };
 
-  try{
-    const r = await fetch(API_URL,{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-    const d = await r.json();
+  const r = await fetch(API_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(payload)
+  });
+  const d = await r.json();
 
-    if(d.status==="success"){
-      alert("✅ Created " + d.wo_id);
-      location.reload();
-    }else{
-      alert("❌ Error: "+(d.message||"Unknown"));
-      submitBtn.disabled=false;
-      statusText.innerText="";
-    }
-  }catch(err){
-    console.error(err);
-    alert("❌ Network / GAS Error");
-    submitBtn.disabled=false;
-    statusText.innerText="";
+  if(d.status==="success"){
+    alert("✅ Created "+d.wo_id);
+    location.reload();
+  }else{
+    alert("❌ Error");
+    el("submitBtn").disabled=false;
+    el("status").innerText="";
   }
 }
 </script>
 
 </body>
 </html>
-

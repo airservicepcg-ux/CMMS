@@ -5,122 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Create Work Order</title>
 
-<!-- QR Scanner -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-body {
+body{
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 20px;
+  background:#f4f6f8;
+  margin:0;
+  padding:20px;
 }
-
-.top-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #1f3c88;
-  color: white;
-  padding: 14px 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-
-.top-nav button {
-  background: white;
-  color: #1f3c88;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.card {
-  max-width: 520px;
-  background: white;
-  padding: 24px;
-  border-radius: 14px;
-  margin: auto;
-}
-
-label {
-  font-weight: bold;
-  margin-top: 14px;
-  display: block;
-}
-
-input, textarea, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-button {
-  cursor: pointer;
-}
-
-.submit-btn {
-  margin-top: 20px;
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #1f3c88, #274bb5);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.submit-btn.loading {
-  background: #999;
-}
-
-.submit-btn.success {
-  background: #2e7d32;
-}
-
-.photo-btn {
-  margin-top: 8px;
-  width: 100%;
-  padding: 10px;
-  background: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-}
-
-#preview img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin: 4px;
-}
-
-#assetDetail {
-  display:none;
-  margin-top:12px;
-  padding:12px;
-  border:1px solid #ddd;
+.top-nav{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:#1f3c88;
+  color:#fff;
+  padding:12px 20px;
   border-radius:10px;
-  background:#fafafa;
+  margin-bottom:20px;
 }
-
-#assetDetail img {
-  max-width:100%;
+.top-nav button{
+  background:#fff;
+  color:#1f3c88;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  font-weight:bold;
+}
+.card{
+  max-width:520px;
+  background:#fff;
+  padding:24px;
+  border-radius:12px;
+  margin:auto;
+}
+label{
+  font-weight:bold;
+  margin-top:12px;
+  display:block;
+}
+input, textarea, select{
+  width:100%;
+  padding:10px;
+  margin-top:6px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+.submit-btn{
+  margin-top:20px;
+  width:100%;
+  padding:12px;
+  background:#1f3c88;
+  color:#fff;
+  border:none;
   border-radius:8px;
-  margin-bottom:8px;
+  font-size:16px;
+  font-weight:bold;
 }
-
-#qr-reader {
-  display:none;
-  margin-top:10px;
+.photo-btn{
+  margin-top:8px;
+  width:100%;
+  padding:10px;
+  background:#4caf50;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
 }
+#preview img{
+  width:80px;
+  height:80px;
+  object-fit:cover;
+  border-radius:6px;
+  margin:5px;
+}
+#qr-reader{display:none;margin-top:10px;}
 </style>
 </head>
 
@@ -134,17 +93,11 @@ button {
 <div class="card">
 
 <label>Asset ID</label>
-<select id="asset_id">
-  <option value="">-- Select Asset --</option>
-</select>
-
+<select id="asset_id"></select>
 <button type="button" onclick="openQRScanner()">📷 Scan Asset QR</button>
-<div id="qr-reader"></div>
-<button type="button" onclick="closeQR()" id="closeQR" style="display:none;">❌ Close Scanner</button>
 
-<!-- Asset Detail -->
-<div id="assetDetail">
-  <img id="assetImage" />
+<div id="assetDetail" style="display:none;border:1px solid #ddd;padding:12px;border-radius:8px;margin-top:10px;">
+  <img id="assetImage" style="max-width:100%;border-radius:6px;margin-bottom:8px;" />
   <div><b>ชื่อเครื่อง:</b> <span id="d_name"></span></div>
   <div><b>ประเภท:</b> <span id="d_class"></span></div>
   <div><b>กำลังไฟ:</b> <span id="d_kw"></span> kW / <span id="d_hp"></span> HP</div>
@@ -152,6 +105,9 @@ button {
   <div><b>Location:</b> <span id="d_location"></span></div>
   <div><b>Status:</b> <span id="d_status"></span></div>
 </div>
+
+<div id="qr-reader"></div>
+<button id="closeQR" onclick="closeQR()" style="display:none;">❌ Close Scanner</button>
 
 <label>Line</label>
 <select id="line">
@@ -183,159 +139,140 @@ button {
 <label>Photo (max 4)</label>
 <button type="button" class="photo-btn" onclick="takePhoto()">📸 Take Photo</button>
 <div id="photo-count">0 / 4</div>
-
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
 <div id="preview"></div>
 
-<button id="submitBtn" class="submit-btn" onclick="submitWO()">Submit Work Order</button>
+<button class="submit-btn" onclick="submitWO()">Submit Work Order</button>
 
 </div>
 
 <script>
-// ===============================
-// CONFIG (แก้แค่ตรงนี้)
-// ===============================
-const API_URL = "https://script.google.com/macros/s/AKfycbzhl0YwuIgCLef0MSpHWmpO3GZwPuyMbXcsNETJ0HinK-2BscbvtSNoqaUW71Ec1GemEg/exec";
+/* ==============================
+ CONFIG
+============================== */
+const API_URL = "https://script.google.com/macros/s/AKfycbx7KP3UgkEdBWpJDmXSlQQ1GpDMWCv7jMCEW2rInHQXo6Xvyl9TJtEYTyHzWgntQaR9/exec";
 
-// ===============================
-// NAV
-// ===============================
+/* ==============================
+ NAV
+============================== */
 function goHome(){
-  location.href = "https://airservicepcg-ux.github.io/CMMS/";
+  location.href="https://airservicepcg-ux.github.io/CMMS/";
 }
 
-// ===============================
-// LOAD ASSET LIST
-// ===============================
+/* ==============================
+ LOAD ASSET DROPDOWN
+============================== */
 fetch(API_URL + "?mode=asset")
 .then(r => r.json())
 .then(list => {
   const sel = document.getElementById("asset_id");
-  list.forEach(id => {
-    const o = document.createElement("option");
-    o.value = id;
-    o.textContent = id;
+  sel.innerHTML = `<option value="">-- Select Asset --</option>`;
+  list.forEach(id=>{
+    const o=document.createElement("option");
+    o.value=id;
+    o.textContent=id;
     sel.appendChild(o);
   });
 });
 
-// ===============================
-// LOAD ASSET DETAIL
-// ===============================
+/* ==============================
+ ASSET DETAIL
+============================== */
 async function loadAssetDetail(assetId){
   if(!assetId){
-    assetDetail.style.display="none";
+    document.getElementById("assetDetail").style.display="none";
     return;
   }
+  const r = await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
+  const a = await r.json();
+  if(a.error) return;
 
-  const res = await fetch(API_URL + "?mode=assetDetail&asset_id=" + assetId);
-  const a = await res.json();
-
-  if(a.error){
-    assetDetail.style.display="none";
-    return;
-  }
-
-  assetDetail.style.display="block";
-  assetImage.src = a.image_url || "";
-  d_name.innerText = a.asset_name || "-";
-  d_class.innerText = a.asset_class || "-";
-  d_kw.innerText = a.kw || "-";
-  d_hp.innerText = a.hp || "-";
-  d_line.innerText = a.line || "-";
-  d_location.innerText = a.location || "-";
-  d_status.innerText = a.status || "-";
+  document.getElementById("assetDetail").style.display="block";
+  document.getElementById("assetImage").src = a.image_url || "";
+  document.getElementById("d_name").innerText = a.asset_name;
+  document.getElementById("d_class").innerText = a.asset_class;
+  document.getElementById("d_kw").innerText = a.kw;
+  document.getElementById("d_hp").innerText = a.hp;
+  document.getElementById("d_line").innerText = a.line;
+  document.getElementById("d_location").innerText = a.location;
+  document.getElementById("d_status").innerText = a.status;
 }
 
-asset_id.addEventListener("change", e => loadAssetDetail(e.target.value));
+document.getElementById("asset_id").addEventListener("change",function(){
+  loadAssetDetail(this.value);
+});
 
-// ===============================
-// QR SCAN
-// ===============================
+/* ==============================
+ QR SCAN
+============================== */
 let qr;
 function openQRScanner(){
+  document.getElementById("qr-reader").style.display="block";
+  document.getElementById("closeQR").style.display="block";
   qr = new Html5Qrcode("qr-reader");
-  qr-reader.style.display="block";
-  closeQR.style.display="block";
-
-  qr.start({facingMode:"environment"}, {fps:10, qrbox:250}, txt => {
-    asset_id.value = txt.trim();
+  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
+    document.getElementById("asset_id").value = txt.trim();
     loadAssetDetail(txt.trim());
     closeQR();
   });
 }
-
 function closeQR(){
   if(qr) qr.stop();
-  qr-reader.style.display="none";
-  closeQR.style.display="none";
+  document.getElementById("qr-reader").style.display="none";
+  document.getElementById("closeQR").style.display="none";
 }
 
-// ===============================
-// PHOTO
-// ===============================
-let images = [];
-const maxPhotos = 4;
+/* ==============================
+ PHOTO
+============================== */
+let images=[];
+const maxPhotos=4;
 
 function takePhoto(){
-  if(images.length >= maxPhotos){
-    alert("ครบ 4 รูปแล้ว");
-    return;
-  }
-  cameraInput.click();
+  if(images.length>=maxPhotos){alert("ครบ 4 รูปแล้ว");return;}
+  document.getElementById("cameraInput").click();
 }
 
-cameraInput.addEventListener("change", () => {
-  const file = cameraInput.files[0];
+document.getElementById("cameraInput").addEventListener("change",()=>{
+  const file=cameraInput.files[0];
   if(!file) return;
-
-  const r = new FileReader();
-  r.onload = () => {
+  const r=new FileReader();
+  r.onload=()=>{
     images.push(r.result);
-    const img = document.createElement("img");
-    img.src = r.result;
+    const img=document.createElement("img");
+    img.src=r.result;
     preview.appendChild(img);
-    photo-count.innerText = images.length + " / " + maxPhotos;
+    document.getElementById("photo-count").innerText=images.length+" / "+maxPhotos;
   };
   r.readAsDataURL(file);
 });
 
-// ===============================
-// SUBMIT
-// ===============================
+/* ==============================
+ SUBMIT
+============================== */
 async function submitWO(){
-  const btn = submitBtn;
-  btn.classList.add("loading");
-  btn.innerText = "Sending...";
-
-  const payload = {
-    asset_id: asset_id.value,
-    line: line.value,
-    problem: problem.value,
-    priority: priority.value,
-    owner: owner.value,
-    email: email.value,
-    phone: phone.value,
-    images: images
+  const payload={
+    asset_id:asset_id.value,
+    line:line.value,
+    problem:problem.value,
+    priority:priority.value,
+    owner:owner.value,
+    email:email.value,
+    phone:phone.value,
+    images:images
   };
 
-  const res = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
+  const r = await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify(payload)
   });
+  const d = await r.json();
 
-  const d = await res.json();
-
-  if(d.status === "success"){
-    btn.classList.remove("loading");
-    btn.classList.add("success");
-    btn.innerText = "✅ Created";
-    alert("Created " + d.wo_id);
-    setTimeout(()=>location.reload(),1200);
+  if(d.status==="success"){
+    alert("Created "+d.wo_id);
+    location.reload();
   }else{
     alert("Error");
-    btn.classList.remove("loading");
-    btn.innerText = "Submit Work Order";
   }
 }
 </script>

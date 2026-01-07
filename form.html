@@ -29,7 +29,6 @@ body{
   padding:6px 12px;
   border-radius:6px;
   font-weight:bold;
-  cursor:pointer;
 }
 .card{
   max-width:520px;
@@ -40,7 +39,7 @@ body{
 }
 label{
   font-weight:bold;
-  margin-top:12px;
+  margin-top:14px;
   display:block;
 }
 input, textarea, select{
@@ -51,7 +50,7 @@ input, textarea, select{
   border:1px solid #ccc;
 }
 .submit-btn{
-  margin-top:20px;
+  margin-top:24px;
   width:100%;
   padding:12px;
   background:#1f3c88;
@@ -60,18 +59,26 @@ input, textarea, select{
   border-radius:8px;
   font-size:16px;
   font-weight:bold;
-  cursor:pointer;
-}
-.submit-btn:disabled{
-  background:#999;
 }
 .asset-box{
-  margin-top:10px;
+  margin-top:12px;
   border:1px solid #ddd;
   padding:12px;
   border-radius:8px;
   background:#fafafa;
   line-height:1.6;
+}
+.asset-box b{
+  display:inline-block;
+  width:90px;
+}
+.desc{
+  margin-top:8px;
+  padding:8px;
+  background:#fff;
+  border:1px dashed #ccc;
+  border-radius:6px;
+  white-space:pre-wrap;
 }
 </style>
 </head>
@@ -88,15 +95,25 @@ input, textarea, select{
 <label>Asset ID</label>
 <select id="asset_id"></select>
 
-<div id="assetDetail" class="asset-box" style="display:none;"></div>
+<div id="assetDetail" class="asset-box" style="display:none;">
+  <div><b>ชื่อเครื่อง:</b> <span id="d_name"></span></div>
+  <div><b>ประเภท:</b> <span id="d_class"></span></div>
+  <div><b>กำลังไฟ:</b> <span id="d_kw"></span> kW / <span id="d_hp"></span> HP</div>
+  <div><b>Line:</b> <span id="d_line"></span></div>
+  <div><b>Location:</b> <span id="d_location"></span></div>
+  <div><b>Status:</b> <span id="d_status"></span></div>
+
+  <div class="desc">
+    <b>รายละเอียด:</b><br>
+    <span id="d_desc"></span>
+  </div>
+</div>
 
 <label>Line</label>
 <select id="line">
   <option>Line 1</option>
   <option>Line 2</option>
   <option>Line 3</option>
-  <option>Line 4</option>
-  <option>Line 5</option>
 </select>
 
 <label>Problem</label>
@@ -111,7 +128,7 @@ input, textarea, select{
 </select>
 
 <label>Owner</label>
-<input id="owner" placeholder="ชื่อผู้แจ้งงาน"/>
+<input id="owner"/>
 
 <label>Email</label>
 <input type="email" id="email"/>
@@ -124,21 +141,15 @@ input, textarea, select{
 </div>
 
 <script>
-/* ==============================
- CONFIG
-============================== */
+/* ================= CONFIG ================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbzRfWNIS9k7psXzY8Zi_YThivvrvEtzSx4RfV8_GeeRQQ_1yRN3DA6R6E3VDFU5xJAmHQ/exec";
 
-/* ==============================
- NAV
-============================== */
+/* ================= NAV ================= */
 function goHome(){
-  location.href="index.html";
+  location.href="https://airservicepcg-ux.github.io/CMMS/";
 }
 
-/* ==============================
- LOAD ASSET LIST
-============================== */
+/* ================= LOAD ASSET LIST ================= */
 fetch(API_URL + "?mode=asset")
 .then(r => r.json())
 .then(list => {
@@ -152,71 +163,58 @@ fetch(API_URL + "?mode=asset")
   });
 });
 
-/* ==============================
- LOAD ASSET DETAIL
-============================== */
+/* ================= ASSET DETAIL ================= */
 async function loadAssetDetail(assetId){
   if(!assetId){
-    assetDetail.style.display="none";
+    document.getElementById("assetDetail").style.display="none";
     return;
   }
+
   const r = await fetch(API_URL+"?mode=assetDetail&asset_id="+encodeURIComponent(assetId));
   const a = await r.json();
   if(a.error) return;
 
-  assetDetail.style.display="block";
-  assetDetail.innerHTML = `
-    <b>ชื่อเครื่อง:</b> ${a.asset_name}<br>
-    <b>ประเภท:</b> ${a.asset_class}<br>
-    <b>กำลังไฟ:</b> ${a.kw} kW / ${a.hp} HP<br>
-    <b>Line:</b> ${a.line}<br>
-    <b>Location:</b> ${a.location}<br>
-    <b>Status:</b> ${a.status}<br>
-    <b>รายละเอียด:</b><br>${a.description || "-"}
-  `;
+  document.getElementById("assetDetail").style.display="block";
+
+  d_name.innerText = a.asset_name || "-";
+  d_class.innerText = a.asset_class || "-";
+  d_kw.innerText = a.kw || "-";
+  d_hp.innerText = a.hp || "-";
+  d_line.innerText = a.line || "-";
+  d_location.innerText = a.location || "-";
+  d_status.innerText = a.status || "-";
+  d_desc.innerText = a.description && a.description.trim() !== ""
+    ? a.description
+    : "– ไม่มีรายละเอียด –";
 }
 
-asset_id.addEventListener("change",()=>loadAssetDetail(asset_id.value));
+asset_id.addEventListener("change",function(){
+  loadAssetDetail(this.value);
+});
 
-/* ==============================
- SUBMIT WORK ORDER (✔ FIXED)
-============================== */
+/* ================= SUBMIT ================= */
 async function submitWO(){
-  const btn = document.querySelector(".submit-btn");
-  btn.disabled = true;
-  btn.innerText = "Submitting...";
-
-  const payload = {
-    asset_id: asset_id.value,
-    line: line.value,
-    problem: problem.value,
-    priority: priority.value,
-    owner: owner.value,
-    email: email.value,
-    phone: phone.value
+  const payload={
+    asset_id:asset_id.value,
+    line:line.value,
+    problem:problem.value,
+    priority:priority.value,
+    owner:owner.value,
+    email:email.value,
+    phone:phone.value
   };
 
-  try{
-    const res = await fetch(API_URL,{
-      method:"POST",
-      body: JSON.stringify(payload)   // ✅ สำคัญ: ไม่มี headers
-    });
+  const r = await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify(payload)
+  });
+  const d = await r.json();
 
-    const text = await res.text();
-    const data = JSON.parse(text);
-
-    if(data.status==="success"){
-      alert("Created "+data.wo_id);
-      location.reload();
-    }else{
-      alert("GAS Error\n"+text);
-    }
-  }catch(err){
-    console.error(err);
-    alert("Network / GAS Error\n"+err.message);
-  }finally{
-    btn.disabled=false;
-    btn.innerText="Submit Work Order";
+  if(d.status==="success"){
+    alert("Created " + d.wo_id);
+    location.reload();
+  }else{
+    alert("Error : " + d.message);
   }
 }
 </script>

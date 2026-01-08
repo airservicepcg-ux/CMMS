@@ -160,8 +160,8 @@ input, textarea, select{
   <option value="WHA">WHA – Warehouse production</option>
 </select>
 
-<label>Owner_name</label>
-<input type="Owner_name" id="Owner_name"/>
+  <label>Owner_name</label>
+<input id="owner_name" placeholder="ชื่อผู้แจ้งงาน">
   
 <label>Email</label>
 <input type="email" id="email"/>
@@ -294,16 +294,17 @@ async function submitWO(){
   el("submitBtn").disabled = true;
   el("status").innerText = "⏳ กำลังส่งข้อมูล...";
 
-  const payload={
-    asset_id:el("asset_id").value,
-    line:el("line").value,
-    problem:el("problem").value,
-    priority:el("priority").value,
-    owner:el("owner").value,
-    email:el("email").value,
-    phone:el("phone").value,
-    images:images
-  };
+  const payload = {
+  asset_id: el("asset_id").value,
+  line: el("line").value,
+  problem: el("problem").value,
+  priority: el("priority").value,
+  owner: el("owner").value,              // Dept code
+  owner_name: el("owner_name").value,    // ✅ ตัวนี้แหละที่ขาด
+  email: el("email").value,
+  phone: el("phone").value,
+  images: images
+};
 
   try{
     const r = await fetch(API_URL,{

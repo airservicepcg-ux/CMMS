@@ -145,8 +145,20 @@ input, textarea, select{
   <option>Low</option>
 </select>
 
-<label>Owner</label>
-<input id="owner"/>
+  <label>Owner (Responsible Dept.)</label>
+<select id="owner">
+  <option value="">-- Select Owner --</option>
+  <option value="MTN">MTN – Maintenance</option>
+  <option value="EL">EL – Electrical</option>
+  <option value="MC">MC – Mechanical</option>
+  <option value="UTL">UTL – Utility</option>
+  <option value="PRD">PRD – Production</option>
+  <option value="QC">QC – Quality Control</option>
+  <option value="QA">QA – Quality Assurance</option>
+  <option value="SAN">SAN – Sanitation</option>
+  <option value="HSE">HSE – Safety</option>
+  <option value="WH">WH – Warehouse</option>
+</select>
 
 <label>Email</label>
 <input type="email" id="email"/>

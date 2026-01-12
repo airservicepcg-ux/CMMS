@@ -1,166 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Job Status – Technician</title>
-
+<title>Job Status</title>
 <style>
-body{
-  font-family:Arial, sans-serif;
-  background:#f4f6f8;
-  margin:0;
-  padding:20px;
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+.header{
+  background:#1f3c88;color:#fff;
+  padding:14px;border-radius:10px;
+  display:flex;align-items:center;gap:12px
 }
-.top-nav{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  background:#1f3c88;
-  color:#fff;
-  padding:14px 20px;
-  border-radius:10px;
-  margin-bottom:20px;
+.table{
+  margin-top:20px;
+  background:#fff;border-radius:12px;
+  overflow:hidden
 }
-.top-nav button{
-  background:#fff;
-  color:#1f3c88;
-  border:none;
-  padding:6px 12px;
-  border-radius:6px;
-  font-weight:bold;
+.row,.head{
+  display:grid;
+  grid-template-columns: 160px 120px 1fr 120px 100px;
+  padding:12px
 }
-.card{
-  background:#fff;
-  border-radius:12px;
-  padding:16px;
-  box-shadow:0 2px 6px rgba(0,0,0,.1);
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-th{
-  background:#1f3c88;
-  color:#fff;
-  padding:10px;
-  font-size:14px;
-}
-td{
-  padding:10px;
-  border-bottom:1px solid #ddd;
-  font-size:14px;
-}
-.badge{
-  padding:4px 10px;
-  border-radius:20px;
-  font-size:12px;
-  font-weight:bold;
-}
-.OPEN{ background:#ff9800; color:#fff; }
-.IN_PROGRESS{ background:#2196f3; color:#fff; }
-.CRITICAL{ color:#d32f2f; font-weight:bold; }
-
-.loading{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-weight:bold;
-  color:#1f3c88;
-}
-.spinner{
-  width:20px;
-  height:20px;
-  border:3px solid #cfd6e6;
-  border-top:3px solid #1f3c88;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{
-  to{ transform:rotate(360deg); }
-}
-.empty{
-  text-align:center;
-  padding:30px;
-  color:#888;
-  font-weight:bold;
-}
+.head{background:#1f3c88;color:#fff;font-weight:bold}
+.row{border-bottom:1px solid #eee}
+.empty{padding:40px;text-align:center;color:#888}
 </style>
 </head>
 
 <body>
 
-<div class="top-nav">
-  <button onclick="goHome()">⬅ Home</button>
-  <b>🛠 Technician – Job Status</b>
+<div class="header">
+  <button onclick="location.href='index.html'">⬅ Home</button>
+  <b>Technician – Job Status</b>
 </div>
 
-<div class="card">
-  <div id="loading" class="loading">
-    <div class="spinner"></div>
-    <div>กำลังโหลดรายการงาน...</div>
+<div class="table">
+  <div class="head">
+    <div>WO ID</div>
+    <div>Asset</div>
+    <div>Problem</div>
+    <div>Priority</div>
+    <div>Status</div>
   </div>
-
-  <table id="jobTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>WO ID</th>
-        <th>Asset</th>
-        <th>Problem</th>
-        <th>Priority</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="jobBody"></tbody>
-  </table>
-
-  <div id="empty" class="empty" style="display:none;">
-    🎉 ไม่มีงานค้างในระบบ
-  </div>
+  <div id="list"></div>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzRfWNIS9k7psXzY8Zi_YThivvrvEtzSx4RfV8_GeeRQQ_1yRN3DA6R6E3VDFU5xJAmHQ/exec";
-const el = id => document.getElementById(id);
+const API = "https://script.google.com/macros/s/AKfycbzRfWNIS9k7psXzY8Zi_YThivvrvEtzSx4RfV8_GeeRQQ_1yRN3DA6R6E3VDFU5xJAmHQ/exec";
 
-function goHome(){
-  location.href="https://airservicepcg-ux.github.io/CMMS/";
-}
-
-async function loadJobs(){
-  try{
-    const r = await fetch(API_URL+"?mode=jobStatus");
-    const data = await r.json();
-
-    el("loading").style.display="none";
-
-    if(!data.length){
-      el("empty").style.display="block";
-      return;
-    }
-
-    el("jobTable").style.display="table";
-    const body = el("jobBody");
-    body.innerHTML="";
-
-    data.forEach(j=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${j.wo_id}</td>
-        <td>${j.asset_id}</td>
-        <td>${j.problem}</td>
-        <td class="${j.priority==='Critical'?'CRITICAL':''}">${j.priority}</td>
-        <td><span class="badge ${j.status}">${j.status}</span></td>
-      `;
-      body.appendChild(tr);
-    });
-
-  }catch(err){
-    el("loading").innerText="❌ โหลดข้อมูลไม่สำเร็จ";
+fetch(API + "?mode=jobStatus")
+.then(r=>r.json())
+.then(rows=>{
+  const box = document.getElementById("list");
+  if(!rows.length){
+    box.innerHTML = `<div class="empty">🎉 ไม่มีงานค้างในระบบ</div>`;
+    return;
   }
-}
 
-loadJobs();
+  rows.forEach(r=>{
+    const div=document.createElement("div");
+    div.className="row";
+    div.innerHTML=`
+      <div>${r.wo_id}</div>
+      <div>${r.asset_id}</div>
+      <div>${r.problem}</div>
+      <div>${r.priority}</div>
+      <div>${r.status}</div>
+    `;
+    box.appendChild(div);
+  });
+})
+.catch(()=>{
+  document.getElementById("list").innerHTML =
+    `<div class="empty">❌ Load failed</div>`;
+});
 </script>
 
 </body>

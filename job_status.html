@@ -1,121 +1,112 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Job Status – Technician</title>
+<meta charset="UTF-8">
+<title>Technician – Job Status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
   font-family: Arial, sans-serif;
-  background:#f4f6f8;
+  background:#f4f6f9;
   margin:0;
-  padding:20px;
 }
-
-/* ================= HEADER ================= */
-.top-nav{
-  display:flex;
-  align-items:center;
-  gap:12px;
+.header{
   background:#1f3c88;
   color:#fff;
-  padding:14px 20px;
-  border-radius:10px;
-  margin-bottom:20px;
-}
-.top-nav button{
-  background:#fff;
-  color:#1f3c88;
-  border:none;
-  padding:6px 12px;
-  border-radius:6px;
+  padding:16px 20px;
+  font-size:22px;
   font-weight:bold;
-  cursor:pointer;
+  border-radius:0 0 14px 14px;
 }
-
-/* ================= CARD ================= */
-.card{
-  background:#fff;
-  border-radius:12px;
-  padding:20px;
-  max-width:1000px;
-  margin:auto;
+.container{
+  max-width:1200px;
+  margin:20px auto;
+  padding:0 16px;
 }
-
-/* ================= TABLE ================= */
+.filter-bar{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;
+  margin-bottom:12px;
+}
+.filter-bar input, .filter-bar select{
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
 table{
   width:100%;
   border-collapse:collapse;
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
 }
-th, td{
-  padding:12px 10px;
-  border-bottom:1px solid #e0e0e0;
-  text-align:left;
-  font-size:14px;
-}
-th{
+thead{
   background:#1f3c88;
   color:#fff;
-  font-weight:bold;
 }
-tr:hover{
-  background:#f9fafc;
+th, td{
+  padding:12px;
+  border-bottom:1px solid #eee;
+  text-align:left;
 }
-
-/* ================= STATUS TAG ================= */
-.tag{
-  padding:4px 10px;
+.status{
+  padding:6px 12px;
   border-radius:20px;
-  font-size:12px;
   font-weight:bold;
-  display:inline-block;
+  font-size:13px;
 }
-.OPEN{ background:#ffeb3b; color:#000; }
-.IN_PROGRESS{ background:#03a9f4; color:#fff; }
-.DONE{ background:#4caf50; color:#fff; }
-
-/* ================= LOADING / EMPTY ================= */
-.center{
+.OPEN{ background:#ffeb3b; }
+.IN_PROGRESS{ background:#90caf9; }
+button{
+  padding:6px 10px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+.pdf-btn{
+  background:#4caf50;
+  color:#fff;
+}
+.empty{
   text-align:center;
-  padding:30px;
+  padding:20px;
   color:#666;
-}
-.spinner{
-  width:40px;
-  height:40px;
-  border:4px solid #ddd;
-  border-top:4px solid #1f3c88;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-  margin:20px auto;
-}
-@keyframes spin{
-  to{ transform:rotate(360deg); }
 }
 </style>
 </head>
 
 <body>
 
-<!-- ================= HEADER ================= -->
-<div class="top-nav">
-  <button onclick="goHome()">⬅ Home</button>
-  <b>🛠 Technician – Job Status</b>
+<div class="header">
+  ← <a href="index.html" style="color:#fff;text-decoration:none;">Home</a>
+  &nbsp; 🔧 Technician – Job Status
 </div>
 
-<!-- ================= CONTENT ================= -->
-<div class="card">
-  <div id="loading" class="center">
-    <div class="spinner"></div>
-    กำลังโหลดข้อมูลงานค้าง...
+<div class="container">
+
+  <!-- FILTER -->
+  <div class="filter-bar">
+    <input placeholder="WO ID" oninput="applyFilter()">
+    <input placeholder="Asset" oninput="applyFilter()">
+    <input placeholder="Problem" oninput="applyFilter()">
+    <select onchange="applyFilter()">
+      <option value="">All Priority</option>
+      <option>Critical</option>
+      <option>High</option>
+      <option>Medium</option>
+      <option>Low</option>
+    </select>
+    <select onchange="applyFilter()">
+      <option value="">All Status</option>
+      <option>OPEN</option>
+      <option>IN_PROGRESS</option>
+    </select>
   </div>
 
-  <div id="empty" class="center" style="display:none;">
-    🎉 ไม่มีงานค้างในระบบ
-  </div>
-
-  <table id="jobTable" style="display:none;">
+  <!-- TABLE -->
+  <table>
     <thead>
       <tr>
         <th>WO ID</th>
@@ -123,61 +114,66 @@ tr:hover{
         <th>Problem</th>
         <th>Priority</th>
         <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
-    <tbody id="jobBody"></tbody>
+    <tbody id="tbody">
+      <tr><td colspan="6" class="empty">⏳ Loading...</td></tr>
+    </tbody>
   </table>
+
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const API_URL = "https://script.google.com/macros/s/AKfycbzPlxZPUvYTiiVPhum7JDbarfIfbpZ2c8_tJa7AZb4OypRJwFB171oC-UqpDdkKMdEhSA/exec";
+const API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=XXXX"; // 🔴 ใส่ของคุณ
+let rows = [];
 
-/* ================= NAV ================= */
-function goHome(){
-  location.href = "https://airservicepcg-ux.github.io/CMMS/";
-}
+fetch(API_URL + "&mode=jobStatus")
+.then(r=>r.json())
+.then(data=>{
+  rows = data;
+  render(rows);
+})
+.catch(()=>render([]));
 
-/* ================= LOAD JOB STATUS ================= */
-async function loadJobStatus(){
-  try{
-    const res = await fetch(API_URL + "?mode=jobStatus");
-    const data = await res.json();
-
-    document.getElementById("loading").style.display = "none";
-
-    if(!Array.isArray(data) || data.length === 0){
-      document.getElementById("empty").style.display = "block";
-      return;
-    }
-
-    const tbody = document.getElementById("jobBody");
-    tbody.innerHTML = "";
-
-    data.forEach(j=>{
-      const tr = document.createElement("tr");
-
-      tr.innerHTML = `
-        <td><b>${j.wo_id}</b></td>
-        <td>${j.asset_id}</td>
-        <td>${j.problem}</td>
-        <td>${j.priority}</td>
-        <td><span class="tag ${j.status}">${j.status}</span></td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-
-    document.getElementById("jobTable").style.display = "table";
-
-  }catch(err){
-    document.getElementById("loading").innerText = "❌ โหลดข้อมูลไม่สำเร็จ";
-    console.error(err);
+function render(data){
+  const tb = document.getElementById("tbody");
+  if(!data.length){
+    tb.innerHTML = `<tr><td colspan="6" class="empty">ไม่มีงานค้าง</td></tr>`;
+    return;
   }
+  tb.innerHTML = data.map(r=>`
+    <tr>
+      <td>${r.wo_id}</td>
+      <td>${r.asset_id}</td>
+      <td>${r.problem}</td>
+      <td>${r.priority}</td>
+      <td><span class="status ${r.status}">${r.status}</span></td>
+      <td>
+        ${r.pdf_url
+          ? `<button class="pdf-btn" onclick="openPDF('${r.pdf_url}')">📄 PDF</button>`
+          : '-'}
+      </td>
+    </tr>
+  `).join("");
 }
 
-/* ================= INIT ================= */
-loadJobStatus();
+function applyFilter(){
+  const f = [...document.querySelectorAll(".filter-bar input, .filter-bar select")]
+    .map(e=>e.value.toLowerCase());
+
+  render(rows.filter(r =>
+    (!f[0] || r.wo_id.toLowerCase().includes(f[0])) &&
+    (!f[1] || r.asset_id.toLowerCase().includes(f[1])) &&
+    (!f[2] || r.problem.toLowerCase().includes(f[2])) &&
+    (!f[3] || r.priority.toLowerCase()===f[3]) &&
+    (!f[4] || r.status.toLowerCase()===f[4])
+  ));
+}
+
+function openPDF(url){
+  window.open(url, "_blank");
+}
 </script>
 
 </body>

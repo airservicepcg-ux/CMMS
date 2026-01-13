@@ -1,102 +1,325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<title>Technician Action</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+  }
+
+  header {
+    background: #1e3a8a;
+    color: white;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  header a {
+    color: white;
+    text-decoration: none;
+    background: #2563eb;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  main {
+    max-width: 520px;
+    margin: 30px auto;
+    background: white;
+    padding: 24px;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px rgba(0,0,0,.08);
+  }
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #1e3a8a;
+  }
+
+  label {
+    display: block;
+    margin-top: 14px;
+    font-weight: 600;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 15px;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  button {
+    flex: 1;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .start {
+    background: #facc15;
+    color: #000;
+  }
+
+  .finish {
+    background: #22c55e;
+    color: white;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .status {
+    margin-top: 16px;
+    font-weight: 600;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <a href="job_status.html">← Back</a>
+  <strong>🔧 Technician Action</strong>
+</header>
+
+<main>
+  <h2>Work Order Control</h2>
+
+  <label>Work Order ID</label>
+  <input id="woId" placeholder="WO-XXX-YYYYMMDD-001" />
+
+  <label>Technician Name</label>
+  <input id="technician" placeholder="Somchai" />
+
+  <label>Fix Detail (Finish only)</label>
+  <textarea id="detail" rows="3" placeholder="เปลี่ยนอะไหล่ / แก้ไขสายไฟ"></textarea>
+
+  <div class="actions">
+    <button class="start" id="btnStart">▶️ Start</button>
+    <button class="finish" id="btnFinish">✅ Finish</button>
+  </div>
+
+  <div id="statusMsg" class="status"></div>
+</main>
+
 <script>
+/* ======================================================
+ CONFIG
+====================================================== */
 const API_URL =
   "https://script.google.com/macros/s/AKfycbzPlxZPUvYTiiVPhum7JDbarfIfbpZ2c8_tJa7AZb4OypRJwFB171oC-UqpDdkKMdEhSA/exec";
 
+/* ======================================================
+ ELEMENTS
+====================================================== */
 const woInput = document.getElementById("woId");
 const techInput = document.getElementById("technician");
 const detailInput = document.getElementById("detail");
 const statusMsg = document.getElementById("statusMsg");
-const startBtn = document.querySelector(".start");
-const finishBtn = document.querySelector(".finish");
+const startBtn = document.getElementById("btnStart");
+const finishBtn = document.getElementById("btnFinish");
 
-function setStatus(msg, color="black"){
+/* ======================================================
+ UI HELPERS
+====================================================== */
+function setStatus(msg, color = "black") {
   statusMsg.textContent = msg;
   statusMsg.style.color = color;
 }
 
-function lockAll(){
-  startBtn.disabled = true;
-  finishBtn.disabled = true;
+function lockAll() {
   techInput.disabled = true;
   detailInput.disabled = true;
+  startBtn.disabled = true;
+  finishBtn.disabled = true;
 }
 
-function unlockStart(){
-  startBtn.disabled = false;
-  finishBtn.disabled = true;
+function unlockForStart() {
   techInput.disabled = false;
   detailInput.disabled = false;
+  startBtn.disabled = false;
+  finishBtn.disabled = true;
 }
 
-/* ===============================
+function unlockForFinish() {
+  techInput.disabled = true;
+  detailInput.disabled = false;
+  startBtn.disabled = true;
+  finishBtn.disabled = false;
+}
+
+function resetForm() {
+  woInput.value = "";
+  techInput.value = "";
+  detailInput.value = "";
+  unlockForStart();
+  setStatus("");
+}
+
+/* ======================================================
+ CHECK STATUS (เมื่อกรอก WO)
+====================================================== */
+woInput.addEventListener("blur", checkStatus);
+
+async function checkStatus() {
+  const wo = woInput.value.trim();
+  if (!wo) return;
+
+  setStatus("⏳ ตรวจสอบสถานะงาน...");
+
+  try {
+    const res = await fetch(
+      `${API_URL}?mode=technician&action=CHECK_STATUS&wo_no=${encodeURIComponent(wo)}`
+    ).then(r => r.json());
+
+    if (res.status === "COMPLETED" || res.status === "FINISHED") {
+      lockAll();
+      setStatus("🔒 งานนี้ปิดแล้ว", "gray");
+    } 
+    else if (res.status === "IN_PROGRESS") {
+      unlockForFinish();
+      setStatus("🟡 งานกำลังดำเนินการ", "#ca8a04");
+    } 
+    else if (res.status === "OPEN" || res.status === "SENT") {
+      unlockForStart();
+      setStatus("🆕 งานใหม่ พร้อมเริ่มงาน", "#2563eb");
+    } 
+    else if (res.status === "NOT_FOUND") {
+      unlockForStart();
+      setStatus("❌ ไม่พบ Work Order", "red");
+    }
+    else {
+      setStatus("❌ สถานะไม่รู้จัก", "red");
+    }
+
+  } catch (err) {
+    setStatus("❌ ตรวจสอบสถานะไม่สำเร็จ", "red");
+  }
+}
+
+/* ======================================================
  START JOB
-=============================== */
-async function startJob(){
+====================================================== */
+startBtn.addEventListener("click", startJob);
+
+async function startJob() {
   const wo = woInput.value.trim();
   const tech = techInput.value.trim();
 
-  if(!wo || !tech){
-    setStatus("❌ กรุณากรอก WO และชื่อช่าง","red");
+  if (!wo || !tech) {
+    setStatus("❌ กรุณากรอก WO และชื่อช่าง", "red");
     return;
   }
 
   startBtn.disabled = true;
+  setStatus("⏳ กำลังเริ่มงาน...");
 
-  const res = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      mode:"technician",
-      action:"START",
-      wo_id:wo,
-      technician:tech
-    })
-  }).then(r=>r.json());
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "technician",
+        action: "START_JOB",
+        wo_no: wo,
+        technician: tech
+      })
+    }).then(r => r.json());
 
-  console.log(res);
+    if (res.status === "STARTED") {
+      unlockForFinish();
+      setStatus("🟡 เริ่มงานแล้ว", "#ca8a04");
+    } else {
+      setStatus("❌ " + (res.error || "Start ไม่สำเร็จ"), "red");
+      startBtn.disabled = false;
+    }
 
-  if(res.status==="ok"){
-    finishBtn.disabled = false;
-    setStatus("🟡 เริ่มงานแล้ว","#ca8a04");
-  }else{
-    setStatus("❌ "+(res.error||"Start failed"),"red");
+  } catch (err) {
+    setStatus("❌ Network error", "red");
     startBtn.disabled = false;
   }
 }
 
-/* ===============================
+/* ======================================================
  FINISH JOB
-=============================== */
-async function finishJob(){
+====================================================== */
+finishBtn.addEventListener("click", finishJob);
+
+async function finishJob() {
   const wo = woInput.value.trim();
   const detail = detailInput.value.trim();
 
-  if(!detail){
-    setStatus("❌ กรุณากรอกรายละเอียด","red");
+  if (!detail) {
+    setStatus("❌ กรุณากรอกรายละเอียดการซ่อม", "red");
     return;
   }
 
-  if(!confirm("ยืนยันปิดงานนี้?")) return;
+  if (!confirm("ยืนยันปิดงานนี้หรือไม่?\nหลังจากปิดแล้วจะไม่สามารถแก้ไขได้")) {
+    return;
+  }
 
   finishBtn.disabled = true;
+  setStatus("⏳ กำลังปิดงาน...");
 
-  const res = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      mode:"technician",
-      action:"FINISH",
-      wo_id:wo,
-      detail:detail
-    })
-  }).then(r=>r.json());
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "technician",
+        action: "FINISH_JOB",
+        wo_no: wo,
+        fix_detail: detail
+      })
+    }).then(r => r.json());
 
-  console.log(res);
+    if (res.status === "FINISHED") {
+      lockAll();
+      setStatus("✅ ปิดงานเรียบร้อยแล้ว", "green");
 
-  if(res.status==="ok"){
-    lockAll();
-    setStatus("✅ ปิดงานเรียบร้อย","green");
-  }else{
-    setStatus("❌ "+(res.error||"Finish failed"),"red");
+      setTimeout(() => {
+        if (confirm("ต้องการรับ Work Order ใหม่หรือไม่?")) {
+          resetForm();
+        }
+      }, 500);
+
+    } else {
+      setStatus("❌ " + (res.error || "Finish ไม่สำเร็จ"), "red");
+      finishBtn.disabled = false;
+    }
+
+  } catch (err) {
+    setStatus("❌ Network error", "red");
     finishBtn.disabled = false;
   }
 }
 </script>
+
+</body>
+</html>
+

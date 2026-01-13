@@ -90,6 +90,11 @@
     color: white;
   }
 
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .status {
     margin-top: 16px;
     font-weight: 600;
@@ -125,52 +130,155 @@
 </main>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzPlxZPUvYTiiVPhum7JDbarfIfbpZ2c8_tJa7AZb4OypRJwFB171oC-UqpDdkKMdEhSA/exec";
+/* ===============================
+   CONFIG
+================================ */
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbzPlxZPUvYTiiVPhum7JDbarfIfbpZ2c8_tJa7AZb4OypRJwFB171oC-UqpDdkKMdEhSA/exec";
 
-function startJob() {
-  sendAction("START");
+/* ===============================
+   ELEMENTS
+================================ */
+const woInput = document.getElementById("woId");
+const techInput = document.getElementById("technician");
+const detailInput = document.getElementById("detail");
+const statusMsg = document.getElementById("statusMsg");
+const startBtn = document.querySelector(".start");
+const finishBtn = document.querySelector(".finish");
+
+/* ===============================
+   EVENT
+================================ */
+woInput.addEventListener("blur", checkStatus);
+
+/* ===============================
+   UI HELPERS
+================================ */
+function setStatus(msg, color = "black") {
+  statusMsg.textContent = msg;
+  statusMsg.style.color = color;
 }
 
-function finishJob() {
-  sendAction("FINISH");
+function lockForm() {
+  techInput.disabled = true;
+  detailInput.disabled = true;
+  startBtn.disabled = true;
+  finishBtn.disabled = true;
 }
 
-function sendAction(action) {
-  const wo_id = document.getElementById("woId").value.trim();
-  const technician = document.getElementById("technician").value.trim();
-  const detail = document.getElementById("detail").value.trim();
-  const msg = document.getElementById("statusMsg");
+function unlockForm() {
+  techInput.disabled = false;
+  detailInput.disabled = false;
+  startBtn.disabled = false;
+  finishBtn.disabled = true;
+}
 
-  if (!wo_id) {
-    msg.textContent = "❌ กรุณาใส่ WO ID";
-    msg.style.color = "red";
+function resetForm() {
+  woInput.value = "";
+  techInput.value = "";
+  detailInput.value = "";
+  unlockForm();
+  setStatus("");
+}
+
+/* ===============================
+   CHECK STATUS
+================================ */
+async function checkStatus() {
+  const wo = woInput.value.trim();
+  if (!wo) return;
+
+  const res = await fetch(
+    `${API_URL}?action=CHECK_STATUS&wo_no=${encodeURIComponent(wo)}`
+  ).then(r => r.json());
+
+  if (res.status === "COMPLETED") {
+    lockForm();
+    setStatus("🔒 งานนี้ถูกปิดแล้ว (Read only)", "gray");
+  } else if (res.status === "IN_PROGRESS") {
+    finishBtn.disabled = false;
+    setStatus("🟡 งานกำลังดำเนินการ", "#ca8a04");
+  } else if (res.status === "OPEN") {
+    unlockForm();
+    setStatus("🆕 งานใหม่ พร้อมเริ่มงาน", "#2563eb");
+  } else if (res.status === "NOT_FOUND") {
+    unlockForm();
+    setStatus("❌ ไม่พบ Work Order", "red");
+  }
+}
+
+/* ===============================
+   START JOB
+================================ */
+async function startJob() {
+  const wo = woInput.value.trim();
+  const tech = techInput.value.trim();
+
+  if (!wo || !tech) {
+    setStatus("❌ กรุณากรอก WO และชื่อช่าง", "red");
     return;
   }
 
-  fetch(API_URL, {
+  startBtn.disabled = true;
+
+  const res = await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
-      mode: "updateStatus",
-      wo_id: wo_id,
-      action: action,
-      technician: technician,
-      detail: detail
+      action: "START_JOB",
+      wo_no: wo,
+      technician: tech
     })
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (res.status === "ok") {
-      msg.textContent = "✅ บันทึกสถานะเรียบร้อย";
-      msg.style.color = "green";
-    } else {
-      msg.textContent = "❌ " + (res.error || "เกิดข้อผิดพลาด");
-      msg.style.color = "red";
-    }
-  })
-  .catch(err => {
-    msg.textContent = "❌ Network error";
-    msg.style.color = "red";
-  });
+  }).then(r => r.json());
+
+  if (res.status === "STARTED") {
+    finishBtn.disabled = false;
+    setStatus("🟡 เริ่มงานแล้ว", "#ca8a04");
+  } else {
+    setStatus("❌ " + (res.error || "Start ไม่สำเร็จ"), "red");
+    startBtn.disabled = false;
+  }
+}
+
+/* ===============================
+   FINISH JOB
+================================ */
+async function finishJob() {
+  const wo = woInput.value.trim();
+  const detail = detailInput.value.trim();
+
+  if (!detail) {
+    setStatus("❌ กรุณากรอกรายละเอียดการซ่อม", "red");
+    return;
+  }
+
+  if (!confirm("ยืนยันปิดงานนี้หรือไม่?\nหลังจากปิดแล้วจะไม่สามารถแก้ไขได้")) {
+    return;
+  }
+
+  finishBtn.disabled = true;
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "FINISH_JOB",
+      wo_no: wo,
+      fix_detail: detail
+    })
+  }).then(r => r.json());
+
+  if (res.status === "FINISHED") {
+    lockForm();
+    setStatus("✅ ปิดงานเรียบร้อยแล้ว", "green");
+
+    setTimeout(() => {
+      if (confirm("ต้องการรับ Work Order ใหม่หรือไม่?")) {
+        resetForm();
+      }
+    }, 400);
+  } else {
+    setStatus("❌ " + (res.error || "Finish ไม่สำเร็จ"), "red");
+    finishBtn.disabled = false;
+  }
 }
 </script>
 

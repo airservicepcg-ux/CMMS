@@ -6,106 +6,228 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{font-family:Arial;background:#f4f6f9;margin:0}
-header{background:#1f3c88;color:#fff;padding:16px;font-size:20px;font-weight:bold}
-.container{max-width:1200px;margin:20px auto;padding:0 16px}
+body{
+  font-family: Arial, sans-serif;
+  background:#f4f6f9;
+  margin:0;
+}
 
+/* Header */
+.header{
+  background:#1f3c88;
+  color:#fff;
+  padding:16px 24px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:20px;
+  font-weight:bold;
+}
+.header a{
+  color:#fff;
+  text-decoration:none;
+  font-size:16px;
+  padding:6px 12px;
+  background:#0d47a1;
+  border-radius:6px;
+}
+
+/* Container */
+.container{
+  max-width:1200px;
+  margin:20px auto;
+  padding:0 16px;
+}
+
+/* Filters */
 .filters{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:10px;margin-bottom:12px
+  grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+  gap:12px;
+  margin-bottom:16px;
 }
-.filters input,.filters select{
-  padding:8px;border-radius:6px;border:1px solid #ccc
+.filters input,
+.filters select{
+  padding:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  font-size:14px;
 }
 
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden}
-th{background:#1f3c88;color:#fff;padding:10px;text-align:left}
-td{padding:10px;border-bottom:1px solid #eee}
+/* Table */
+.table-wrap{
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+thead{
+  background:#1f3c88;
+  color:#fff;
+}
+th,td{
+  padding:12px 14px;
+  text-align:left;
+  font-size:14px;
+}
+tbody tr{
+  border-bottom:1px solid #eee;
+}
+tbody tr:hover{
+  background:#f9fbff;
+}
 
+/* Status badge */
 .badge{
-  padding:4px 10px;border-radius:12px;font-weight:bold;font-size:12px
+  padding:4px 10px;
+  border-radius:20px;
+  font-weight:bold;
+  font-size:12px;
+  display:inline-block;
 }
-.OPEN{background:#ffeb3b}
-.IN_PROGRESS{background:#03a9f4;color:#fff}
-.CLOSED{background:#4caf50;color:#fff}
+.badge.OPEN{
+  background:#ffeb3b;
+  color:#000;
+}
+.badge.IN_PROGRESS{
+  background:#03a9f4;
+  color:#fff;
+}
+.badge.CLOSED{
+  background:#4caf50;
+  color:#fff;
+}
 
-.btn{
-  padding:6px 10px;border-radius:6px;border:none;
-  background:#1f3c88;color:#fff;cursor:pointer
+/* PDF Button */
+.btn-pdf{
+  padding:6px 12px;
+  background:#0d47a1;
+  color:#fff;
+  border-radius:6px;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:bold;
+}
+.btn-pdf:hover{
+  background:#08306b;
+}
+
+/* Empty */
+.empty{
+  text-align:center;
+  padding:24px;
+  color:#666;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  ← <a href="index.html" style="color:#fff;text-decoration:none">Home</a>
-  &nbsp;&nbsp;🔧 Technician – Job Status
-</header>
+<div class="header">
+  <a href="index.html">← Home</a>
+  🔧 Technician – Job Status
+</div>
 
 <div class="container">
 
-<div class="filters">
-  <input id="f_wo" placeholder="WO ID">
-  <input id="f_asset" placeholder="Asset">
-  <input id="f_problem" placeholder="Problem">
-  <select id="f_priority">
-    <option value="">All Priority</option>
-    <option>Critical</option>
-    <option>High</option>
-    <option>Medium</option>
-    <option>Low</option>
-  </select>
-  <select id="f_status">
-    <option value="">All Status</option>
-    <option>OPEN</option>
-    <option>IN_PROGRESS</option>
-    <option>CLOSED</option>
-  </select>
-</div>
+  <!-- Filters -->
+  <div class="filters">
+    <input id="fWo" placeholder="WO ID">
+    <input id="fAsset" placeholder="Asset">
+    <input id="fProblem" placeholder="Problem">
 
-<table>
-<thead>
-<tr>
-  <th>WO ID</th>
-  <th>Asset</th>
-  <th>Problem</th>
-  <th>Priority</th>
-  <th>Status</th>
-  <th>Action</th>
-</tr>
-</thead>
-<tbody id="tbody">
-<tr><td colspan="6">⏳ Loading...</td></tr>
-</tbody>
-</table>
+    <select id="fPriority">
+      <option value="">All Priority</option>
+      <option>Critical</option>
+      <option>High</option>
+      <option>Medium</option>
+      <option>Low</option>
+    </select>
+
+    <select id="fStatus">
+      <option value="">All Status</option>
+      <option>OPEN</option>
+      <option>IN_PROGRESS</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>WO ID</th>
+          <th>Asset</th>
+          <th>Problem</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="6" class="empty">⏳ Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
 
 </div>
 
 <script>
+/* ===============================
+ CONFIG
+=============================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbzPlxZPUvYTiiVPhum7JDbarfIfbpZ2c8_tJa7AZb4OypRJwFB171oC-UqpDdkKMdEhSA/exec";
 
-let allJobs = [];
+let jobs = [];
 
-const el = id => document.getElementById(id);
-
+/* ===============================
+ LOAD DATA
+=============================== */
 fetch(API_URL + "?mode=jobStatus")
-.then(r=>r.json())
-.then(data=>{
-  allJobs = data;
-  render(allJobs);
+.then(r => r.json())
+.then(data => {
+  jobs = data || [];
+  render();
 })
 .catch(()=>{
-  el("tbody").innerHTML = `<tr><td colspan="6">❌ Load failed</td></tr>`;
+  document.getElementById("tbody").innerHTML =
+    `<tr><td colspan="6" class="empty">❌ Load failed</td></tr>`;
 });
 
-function render(list){
-  if(!list.length){
-    el("tbody").innerHTML = `<tr><td colspan="6">ไม่มีงานค้าง</td></tr>`;
+/* ===============================
+ FILTER + RENDER
+=============================== */
+const filters = ["fWo","fAsset","fProblem","fPriority","fStatus"];
+filters.forEach(id=>{
+  document.getElementById(id).addEventListener("input",render);
+});
+
+function render(){
+  const wo = fWo.value.toLowerCase();
+  const asset = fAsset.value.toLowerCase();
+  const prob = fProblem.value.toLowerCase();
+  const pri = fPriority.value;
+  const st = fStatus.value;
+
+  const rows = jobs.filter(j=>{
+    return (!wo || j.wo_id.toLowerCase().includes(wo)) &&
+           (!asset || j.asset_id.toLowerCase().includes(asset)) &&
+           (!prob || j.problem.toLowerCase().includes(prob)) &&
+           (!pri || j.priority === pri) &&
+           (!st || j.status === st);
+  });
+
+  const tbody = document.getElementById("tbody");
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">ไม่มีงานค้าง</td></tr>`;
     return;
   }
-  el("tbody").innerHTML = list.map(j=>`
+
+  tbody.innerHTML = rows.map(j=>`
     <tr>
       <td><b>${j.wo_id}</b></td>
       <td>${j.asset_id}</td>
@@ -113,32 +235,14 @@ function render(list){
       <td>${j.priority}</td>
       <td><span class="badge ${j.status}">${j.status}</span></td>
       <td>
-        ${j.pdf_url ? `<button class="btn" onclick="window.open('${j.pdf_url}')">📄 View PDF</button>` : "-"}
+        ${j.pdf_url 
+          ? `<a href="${j.pdf_url}" target="_blank" class="btn-pdf">📄 View PDF</a>`
+          : '-'}
       </td>
     </tr>
   `).join("");
-}
-
-document.querySelectorAll(".filters input,.filters select")
-.forEach(elm=>elm.addEventListener("input",filter));
-
-function filter(){
-  const wo = el("f_wo").value.toLowerCase();
-  const asset = el("f_asset").value.toLowerCase();
-  const prob = el("f_problem").value.toLowerCase();
-  const pri = el("f_priority").value;
-  const st = el("f_status").value;
-
-  render(allJobs.filter(j=>
-    (!wo || j.wo_id.toLowerCase().includes(wo)) &&
-    (!asset || j.asset_id.toLowerCase().includes(asset)) &&
-    (!prob || j.problem.toLowerCase().includes(prob)) &&
-    (!pri || j.priority===pri) &&
-    (!st || j.status===st)
-  ));
 }
 </script>
 
 </body>
 </html>
-
